@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Make a GIF</title>
+<style>
+:root {
+  --bg: #f5f3f9;
+  --card: #ffffff;
+  --ink: #1f1b2e;
+  --muted: #6b6580;
+  --line: #e3dfee;
+  --accent: #6d5efc;
+  --ok: #1d7a46;
+  --ok-bg: #e5f4ec;
+  --bad: #b3322f;
+  --bad-bg: #fbe9e8;
+  --checker-a: #ffffff;
+  --checker-b: #ebe8f3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15141f;
+    --card: #1e1d2b;
+    --ink: #ecebf7;
+    --muted: #9b97b5;
+    --line: #33324a;
+    --accent: #8b7ffd;
+    --ok: #6fd39a;
+    --ok-bg: #18301f;
+    --bad: #f08a8a;
+    --bad-bg: #3a1f22;
+    --checker-a: #26253a;
+    --checker-b: #1b1a2a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15141f;
+  --card: #1e1d2b;
+  --ink: #ecebf7;
+  --muted: #9b97b5;
+  --line: #33324a;
+  --accent: #8b7ffd;
+  --ok: #6fd39a;
+  --ok-bg: #18301f;
+  --bad: #f08a8a;
+  --bad-bg: #3a1f22;
+  --checker-a: #26253a;
+  --checker-b: #1b1a2a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; }
+.sub { color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; }
+.back { color: var(--muted); font-size: 14px; text-decoration: none; }
+.back:hover { color: var(--ink); }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 120px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--bg); }
+.drop-title { font-weight: 600; }
+#fileInfo { overflow-wrap: anywhere; }
+
+fieldset { border: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+legend { font-size: 13px; color: var(--muted); padding: 0; margin-bottom: 6px; }
+label.opt { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); min-width: 0; }
+select, .field input[type="number"], .field input[type="text"], .field input[type="color"] {
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+  min-width: 0;
+}
+.field input[type="color"] { height: 42px; padding: 4px; }
+select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+
+.preview {
+  align-self: center;
+  width: 260px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background-color: var(--checker-a);
+  background-image:
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker-b) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker-b) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker-b) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.preview img { max-width: 100%; max-height: 100%; display: block; }
+
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.frames figure { margin: 0; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.frames img {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--checker-a);
+  background-image: linear-gradient(45deg, var(--checker-b) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-b) 25%, transparent 25%);
+  background-size: 16px 16px;
+}
+.frames figcaption { font-size: 12px; color: var(--muted); }
+
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checks li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.tag {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 9px;
+  min-width: 46px;
+  text-align: center;
+}
+.tag.ok { color: var(--ok); background: var(--ok-bg); }
+.tag.bad { color: var(--bad); background: var(--bad-bg); }
+
+.status { font-size: 14px; color: var(--muted); }
+.error { color: var(--bad); font-size: 14px; }
+
+.tiles { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 480px) { .tiles { grid-template-columns: 1fr 1fr; } }
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.tile:hover { border-color: var(--accent); }
+.tile strong { font-size: 16px; }
+.tile span { font-size: 13px; color: var(--muted); }
+
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">← All tools</a>
+  <header>
+    <h1>Make a GIF</h1>
+    <p class="sub">Pick several pictures to join them into one animated GIF.</p>
+  </header>
+
+  <section class="card">
+    <label class="drop" id="drop">
+      <input id="file" type="file" accept="image/*" multiple hidden>
+      <span class="drop-title">Choose a GIF, PNG, JPEG or WebP</span>
+      <span class="note">or drop one here</span>
+    </label>
+    <p class="note" id="fileInfo"></p>
+    <p class="error" id="error" hidden></p>
+  </section>
+
+  <section class="card col" id="opts">
+
+      <label class="field">Time on each picture (ms)
+        <input id="delay" type="number" min="20" value="100">
+      </label>
+      <label class="field">Fit
+        <select id="fit">
+          <option value="fit">Whole image, centred</option>
+          <option value="crop">Fill the box and crop the edges</option>
+        </select>
+      </label>
+
+
+      <label class="field">Output format
+        <select id="format"><option value="auto">Same as the picture (GIF if animated)</option>
+          <option value="gif" selected>GIF (animated)</option>
+          <option value="png">PNG (keeps transparency)</option>
+          <option value="jpeg">JPEG (smallest for photos)</option>
+          <option value="webp">WebP</option>
+          <option value="split">Each frame as its own image</option></select>
+      </label>
+      <label class="field">Colours for GIF
+        <select id="colors">
+          <option value="256" selected>256 (best quality)</option>
+          <option value="128">128</option>
+          <option value="64">64</option>
+          <option value="32">32</option>
+          <option value="16">16 (smallest)</option>
+        </select>
+      </label>
+      <label class="field">Max file size in KB (optional)
+        <input id="maxkb" type="number" min="1" placeholder="No limit">
+      </label>
+
+  </section>
+
+  <section class="card" id="result" hidden>
+    <div class="preview"><img id="preview" alt="Result preview"></div>
+    <div id="frames" class="frames" hidden></div>
+    <ul class="checks" id="checks"></ul>
+    <p class="note">Right-click the preview (or long-press on a phone) to save it.</p>
+    <p class="status" id="status"></p>
+  </section>
+</main>
+<script>
+const Ez = (() => {
+  const $ = id => document.getElementById(id);
+  const kb = n => (n / 1024).toFixed(0) + " KB";
+  const NAMES = { gif: "GIF", png: "PNG", jpeg: "JPEG", webp: "WebP" };
+  const TYPES = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" };
+
+  let source = null;
+  let tool = null;
+  let runId = 0;
+  let timer = 0;
+  let previewUrl = null;
+  let frameUrls = [];
+
+  const num = (id, d) => {
+    const v = parseFloat($(id) && $(id).value);
+    return Number.isFinite(v) ? v : d;
+  };
+  const str = (id, d = "") => ($(id) ? $(id).value : d);
+  const chk = id => !!($(id) && $(id).checked);
+  const set = (id, v) => { if ($(id)) $(id).value = v; };
+  const canvas = (w, h) => {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w));
+    c.height = Math.max(1, Math.round(h));
+    return c;
+  };
+  const size = src => {
+    const f = src.frames[0].src;
+    return [f.naturalWidth || f.width, f.naturalHeight || f.height];
+  };
+
+  function drawFit(img, w, h, mode, fill) {
+    const c = canvas(w, h);
+    const x = c.getContext("2d");
+    if (fill) { x.fillStyle = fill; x.fillRect(0, 0, c.width, c.height); }
+    x.imageSmoothingQuality = "high";
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    const s = mode === "crop" ? Math.max(c.width / sw, c.height / sh) : Math.min(c.width / sw, c.height / sh);
+    const dw = sw * s;
+    const dh = sh * s;
+    x.drawImage(img, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh);
+    return c;
+  }
+
+  function full(src) {
+    const [w, h] = size(src);
+    return src.frames.map(f => ({ canvas: drawFit(f.src, w, h, "fit", null), ms: f.ms }));
+  }
+
+  function flatten(c, color) {
+    const o = canvas(c.width, c.height);
+    const x = o.getContext("2d");
+    x.fillStyle = color;
+    x.fillRect(0, 0, o.width, o.height);
+    x.drawImage(c, 0, 0);
+    return o;
+  }
+
+  function row(ok, text) {
+    const li = document.createElement("li");
+    const tag = document.createElement("span");
+    tag.className = "tag " + (ok ? "ok" : "bad");
+    tag.textContent = ok ? "OK" : "Fix";
+    const label = document.createElement("span");
+    label.textContent = text;
+    li.append(tag, label);
+    return li;
+  }
+
+  const setStatus = t => { $("status").textContent = t || ""; };
+  const showError = t => { $("error").textContent = t || ""; $("error").hidden = !t; };
+  const showChecks = list => $("checks").replaceChildren(...list);
+  const toBlob = (c, type, q) => new Promise(resolve => c.toBlob(resolve, type, q));
+
+  function guessType(name) {
+    if (/\.gif$/i.test(name)) return "image/gif";
+    if (/\.png$/i.test(name)) return "image/png";
+    if (/\.webp$/i.test(name)) return "image/webp";
+    return "image/jpeg";
+  }
+
+  function loadImg(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function decodeFile(file) {
+    const buf = await file.arrayBuffer();
+    const type = file.type || guessType(file.name);
+    if (window.ImageDecoder && type !== "image/jpeg") {
+      try {
+        const dec = new ImageDecoder({ data: buf, type });
+        await dec.tracks.ready;
+        const count = dec.tracks.selectedTrack.frameCount;
+        const frames = [];
+        for (let i = 0; i < count; i++) {
+          const { image } = await dec.decode({ frameIndex: i });
+          const src = await createImageBitmap(image);
+          const ms = image.duration ? image.duration / 1000 : 100;
+          frames.push({ src, ms: Math.max(20, ms) });
+          image.close();
+        }
+        dec.close();
+        return { frames, animated: count > 1 };
+      } catch (e) {
+      }
+    }
+    const img = await loadImg(URL.createObjectURL(new Blob([buf], { type })));
+    return { frames: [{ src: img, ms: 100 }], animated: false };
+  }
+
+  async function loadFiles(files) {
+    if (files.length === 1) {
+      const d = await decodeFile(files[0]);
+      return { frames: d.frames, animated: d.animated, multi: false };
+    }
+    const frames = [];
+    for (const f of files) {
+      const d = await decodeFile(f);
+      frames.push({ src: d.frames[0].src, ms: 100 });
+    }
+    return { frames, animated: frames.length > 1, multi: true };
+  }
+
+  function pixelsOf(c) {
+    return c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+  }
+
+  function palette(sets, maxColors) {
+    const count = new Uint32Array(32768);
+    const sr = new Float64Array(32768);
+    const sg = new Float64Array(32768);
+    const sb = new Float64Array(32768);
+    for (const px of sets) {
+      for (let p = 0; p < px.length; p += 4) {
+        if (px[p + 3] < 128) continue;
+        const r = px[p], g = px[p + 1], b = px[p + 2];
+        const k = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        count[k]++;
+        sr[k] += r; sg[k] += g; sb[k] += b;
+      }
+    }
+    const keys = [];
+    for (let k = 0; k < 32768; k++) if (count[k]) keys.push(k);
+    keys.sort((a, b) => count[b] - count[a]);
+    return keys.slice(0, Math.max(1, Math.min(255, maxColors - 1)))
+      .map(k => [sr[k] / count[k], sg[k] / count[k], sb[k] / count[k]]);
+  }
+
+  function mapper(colors) {
+    const lut = new Int16Array(32768).fill(-1);
+    return (r, g, b, a) => {
+      if (a < 128) return 0;
+      const k = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+      if (lut[k] < 0) {
+        const cr = ((k >> 10) << 3) + 4;
+        const cg = (((k >> 5) & 31) << 3) + 4;
+        const cb = ((k & 31) << 3) + 4;
+        let best = 1;
+        let bestD = Infinity;
+        for (let i = 0; i < colors.length; i++) {
+          const dr = colors[i][0] - cr, dg = colors[i][1] - cg, db = colors[i][2] - cb;
+          const d = dr * dr + dg * dg + db * db;
+          if (d < bestD) { bestD = d; best = i + 1; }
+        }
+        lut[k] = best;
+      }
+      return lut[k];
+    };
+  }
+
+  class BitWriter {
+    constructor() { this.bytes = []; this.acc = 0; this.n = 0; }
+    put(code, size) {
+      this.acc |= code << this.n;
+      this.n += size;
+      while (this.n >= 8) {
+        this.bytes.push(this.acc & 255);
+        this.acc >>>= 8;
+        this.n -= 8;
+      }
+    }
+    flush() {
+      if (this.n > 0) this.bytes.push(this.acc & 255);
+      this.acc = 0;
+      this.n = 0;
+    }
+  }
+
+  function lzw(data, minCode) {
+    const clear = 1 << minCode;
+    const eoi = clear + 1;
+    let nBits = minCode + 1;
+    let maxCode = (1 << nBits) - 1;
+    let free = eoi + 1;
+    const dict = new Map();
+    const bw = new BitWriter();
+    bw.put(clear, nBits);
+    let cur = data[0];
+    for (let i = 1; i < data.length; i++) {
+      const c = data[i];
+      const key = cur * 256 + c;
+      const got = dict.get(key);
+      if (got !== undefined) { cur = got; continue; }
+      bw.put(cur, nBits);
+      if (free < 4096) {
+        dict.set(key, free++);
+      } else {
+        bw.put(clear, nBits);
+        dict.clear();
+        nBits = minCode + 1;
+        maxCode = (1 << nBits) - 1;
+        free = eoi + 1;
+      }
+      if (free > maxCode + 1 && nBits < 12) {
+        nBits++;
+        maxCode = (1 << nBits) - 1;
+      }
+      cur = c;
+    }
+    bw.put(cur, nBits);
+    bw.put(eoi, nBits);
+    bw.flush();
+    return bw.bytes;
+  }
+
+  function subBlocks(out, bytes) {
+    for (let i = 0; i < bytes.length; i += 255) {
+      const n = Math.min(255, bytes.length - i);
+      out.push(n);
+      for (let j = 0; j < n; j++) out.push(bytes[i + j]);
+    }
+    out.push(0);
+  }
+
+  function encodeGif(frames, maxColors) {
+    const w = frames[0].canvas.width;
+    const h = frames[0].canvas.height;
+    const step = Math.max(1, Math.ceil(frames.length / 12));
+    const sample = [];
+    for (let i = 0; i < frames.length; i += step) sample.push(pixelsOf(frames[i].canvas));
+    const colors = palette(sample, maxColors);
+    const map = mapper(colors);
+    const le16 = v => [v & 255, (v >> 8) & 255];
+    const out = [];
+    const text = s => { for (const ch of s) out.push(ch.charCodeAt(0)); };
+
+    text("GIF89a");
+    out.push(...le16(w), ...le16(h), 0xf7, 0, 0);
+    const gct = new Uint8Array(768);
+    colors.forEach(([r, g, b], i) => {
+      gct[(i + 1) * 3] = Math.round(r);
+      gct[(i + 1) * 3 + 1] = Math.round(g);
+      gct[(i + 1) * 3 + 2] = Math.round(b);
+    });
+    out.push(...gct);
+    out.push(0x21, 0xff, 0x0b);
+    text("NETSCAPE2.0");
+    out.push(3, 1, 0, 0, 0);
+
+    for (const f of frames) {
+      const px = pixelsOf(f.canvas);
+      const idx = new Uint8Array(w * h);
+      for (let i = 0, p = 0; i < idx.length; i++, p += 4) {
+        idx[i] = map(px[p], px[p + 1], px[p + 2], px[p + 3]);
+      }
+      const cs = Math.max(2, Math.round(f.ms / 10));
+      out.push(0x21, 0xf9, 4, 0x05, ...le16(cs), 0, 0);
+      out.push(0x2c, 0, 0, 0, 0, ...le16(w), ...le16(h), 0);
+      out.push(8);
+      subBlocks(out, lzw(idx, 8));
+    }
+    out.push(0x3b);
+    return new Blob([new Uint8Array(out)], { type: "image/gif" });
+  }
+
+  function showPreview(blob, checks, msg) {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(blob);
+    $("preview").src = previewUrl;
+    $("preview").hidden = false;
+    $("frames").hidden = true;
+    showChecks(checks);
+    setStatus(msg);
+  }
+
+  async function showFrames(frames, my) {
+    frameUrls.forEach(u => URL.revokeObjectURL(u));
+    frameUrls = [];
+    const box = $("frames");
+    box.replaceChildren();
+    for (let i = 0; i < frames.length; i++) {
+      const blob = await toBlob(frames[i].canvas, "image/png");
+      if (my !== runId) return false;
+      const url = URL.createObjectURL(blob);
+      frameUrls.push(url);
+      const fig = document.createElement("figure");
+      const img = new Image();
+      img.src = url;
+      img.alt = `Frame ${i + 1}`;
+      const cap = document.createElement("figcaption");
+      cap.textContent = `Frame ${i + 1}`;
+      fig.append(img, cap);
+      box.append(fig);
+    }
+    box.hidden = false;
+    $("preview").hidden = true;
+    return true;
+  }
+
+  async function run() {
+    if (!source || !tool) return;
+    const my = ++runId;
+    $("result").hidden = false;
+    setStatus("Working…");
+
+    let res;
+    try {
+      res = await tool.process(source);
+    } catch (e) {
+      console.error(e);
+      if (my === runId) setStatus("Something went wrong with this file. Try another one.");
+      return;
+    }
+    if (my !== runId) return;
+
+    const frames = res.frames;
+    const checks = [row(true, `${frames[0].canvas.width} × ${frames[0].canvas.height} px`)];
+    (res.checks || []).forEach(c => checks.push(row(c[0], c[1])));
+    if (frames.length > 1) checks.push(row(true, `${frames.length} frames`));
+
+    const want = str("format", "auto");
+    if (want === "split") {
+      const ok = await showFrames(frames, my);
+      if (!ok || my !== runId) return;
+      showChecks(checks);
+      setStatus("Right-click any frame to save it.");
+      return;
+    }
+
+    const maxKB = num("maxkb", 0);
+    const limit = maxKB * 1024;
+    const fmt = want === "auto" ? (frames.length > 1 ? "gif" : "png") : want;
+    let blob;
+
+    if (fmt === "gif") {
+      let colors = num("colors", 256);
+      blob = encodeGif(frames, colors);
+      if (maxKB) {
+        for (const k of [128, 64, 32, 16]) {
+          if (blob.size <= limit) break;
+          if (k >= colors) continue;
+          blob = encodeGif(frames, k);
+          colors = k;
+          if (my !== runId) return;
+        }
+      }
+      checks.push(row(true, `Up to ${colors} colours`));
+    } else {
+      if (frames.length > 1) checks.push(row(true, "This format has no animation, so the first frame is saved"));
+      const c = fmt === "jpeg" ? flatten(frames[0].canvas, "#ffffff") : frames[0].canvas;
+      blob = await toBlob(c, TYPES[fmt], 0.92);
+      if (my !== runId) return;
+      if (maxKB && blob.size > limit && fmt !== "png") {
+        let lo = 0.05, hi = 0.92, best = null;
+        for (let i = 0; i < 8; i++) {
+          const mid = (lo + hi) / 2;
+          const b = await toBlob(c, TYPES[fmt], mid);
+          if (my !== runId) return;
+          if (b.size <= limit) { best = b; lo = mid; } else { hi = mid; }
+        }
+        if (best) {
+          blob = best;
+          checks.push(row(true, "Quality lowered to fit the size limit"));
+        }
+      }
+    }
+    if (my !== runId) return;
+
+    const sizeOk = !maxKB || blob.size <= limit;
+    checks.push(row(sizeOk, `${NAMES[fmt]} · ${kb(blob.size)}${maxKB ? ` (limit ${maxKB} KB)` : ""}`));
+    showPreview(blob, checks, sizeOk ? "" : "Still over the size limit. Try a smaller size or a different format.");
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(run, 150);
+  }
+
+  async function handleFiles(list) {
+    const files = [...list].filter(f => /^image\//.test(f.type) || /\.(gif|png|jpe?g|webp)$/i.test(f.name));
+    if (!files.length) return showError("Pick a GIF, PNG, JPEG or WebP image.");
+    showError("");
+    setStatus("Reading files…");
+    $("result").hidden = false;
+    try {
+      source = await loadFiles(files);
+    } catch (e) {
+      source = null;
+      $("result").hidden = true;
+      return showError("Couldn't read that file.");
+    }
+    fileInfo.textContent = files.length > 1
+      ? `${files.length} images, shown in the order you picked them`
+      : `${files[0].name} · ${kb(files[0].size)}` + (source.animated ? ` · ${source.frames.length} frames` : " · still image");
+    if (tool && tool.onLoad) {
+      const [w, h] = size(source);
+      tool.onLoad(source, w, h);
+    }
+    await run();
+  }
+
+  const fileInfo = $("fileInfo");
+  const drop = $("drop");
+  $("file").addEventListener("change", e => handleFiles(e.target.files));
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => {
+    e.preventDefault();
+    drop.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => {
+    e.preventDefault();
+    drop.classList.remove("over");
+  }));
+  drop.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+  $("opts").addEventListener("input", schedule);
+  $("opts").addEventListener("change", schedule);
+
+  return {
+    register: t => { tool = t; },
+    $, num, str, chk, set, canvas, size, drawFit, full, encodeGif,
+    source: () => source,
+    refresh: schedule
+  };
+})();
+
+</script>
+<script>
+Ez.register({
+  process(src) {
+    const delay = Math.max(20, Ez.num("delay", 100));
+    const [w, h] = Ez.size(src);
+    const mode = Ez.str("fit", "fit");
+    const frames = src.frames.map(f => ({
+      canvas: Ez.drawFit(f.src, w, h, mode, null),
+      ms: src.multi ? delay : f.ms
+    }));
+    const checks = src.multi
+      ? [[true, `${frames.length} pictures, ${delay} ms each`]]
+      : [[true, "Single file used as it is. Pick several files to build an animation"]];
+    return { frames, checks };
+  }
+});
+
+</script>
+</body>
+</html>

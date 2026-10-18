@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="claude:viewport-fit-sides" content="cover" />
+    <title>Sticker Maker</title>
+    <style>
+      :root {
+        --bg: #f5f3f9;
+        --card: #ffffff;
+        --ink: #1f1b2e;
+        --muted: #6b6580;
+        --line: #e3dfee;
+        --accent: #6d5efc;
+        --accent-ink: #ffffff;
+        --ok: #1d7a46;
+        --ok-bg: #e5f4ec;
+        --bad: #b3322f;
+        --bad-bg: #fbe9e8;
+        --checker-a: #ffffff;
+        --checker-b: #ebe8f3;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) {
+          --bg: #15141f;
+          --card: #1e1d2b;
+          --ink: #ecebf7;
+          --muted: #9b97b5;
+          --line: #33324a;
+          --accent: #8b7ffd;
+          --accent-ink: #15141f;
+          --ok: #6fd39a;
+          --ok-bg: #18301f;
+          --bad: #f08a8a;
+          --bad-bg: #3a1f22;
+          --checker-a: #26253a;
+          --checker-b: #1b1a2a;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #15141f;
+        --card: #1e1d2b;
+        --ink: #ecebf7;
+        --muted: #9b97b5;
+        --line: #33324a;
+        --accent: #8b7ffd;
+        --accent-ink: #15141f;
+        --ok: #6fd39a;
+        --ok-bg: #18301f;
+        --bad: #f08a8a;
+        --bad-bg: #3a1f22;
+        --checker-a: #26253a;
+        --checker-b: #1b1a2a;
+        color-scheme: dark;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        font-size: 15px;
+        line-height: 1.5;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 28px 48px;
+      }
+      main {
+        max-width: 540px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        min-width: 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0;
+      }
+      .sub {
+        color: var(--muted);
+      }
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .back {
+        color: var(--muted);
+        font-size: 14px;
+        text-decoration: none;
+      }
+      .back:hover {
+        color: var(--ink);
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .drop {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        min-height: 130px;
+        border: 2px dashed var(--line);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s;
+      }
+      .drop:hover,
+      .drop.over {
+        border-color: var(--accent);
+        background: var(--bg);
+      }
+      .drop:focus-within {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .drop-title {
+        font-weight: 600;
+      }
+      #fileInfo {
+        overflow-wrap: anywhere;
+      }
+
+      fieldset {
+        border: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        min-width: 0;
+      }
+      legend {
+        font-size: 13px;
+        color: var(--muted);
+        padding: 0;
+        margin-bottom: 6px;
+      }
+      label.opt {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      select {
+        font: inherit;
+        font-size: 15px;
+        color: var(--ink);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        min-width: 0;
+      }
+      select:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      input[type="radio"] {
+        accent-color: var(--accent);
+        width: 16px;
+        height: 16px;
+        margin: 0;
+      }
+
+      .preview {
+        align-self: center;
+        width: 240px;
+        max-width: 100%;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background-color: var(--checker-a);
+        background-image:
+          linear-gradient(45deg, var(--checker-b) 25%, transparent 25%),
+          linear-gradient(-45deg, var(--checker-b) 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, var(--checker-b) 75%),
+          linear-gradient(-45deg, transparent 75%, var(--checker-b) 75%);
+        background-size: 20px 20px;
+        background-position:
+          0 0,
+          0 10px,
+          10px -10px,
+          -10px 0;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .preview img {
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+      }
+
+      .checks {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .checks li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+      }
+      .tag {
+        flex: none;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 999px;
+        padding: 2px 9px;
+        min-width: 46px;
+        text-align: center;
+      }
+      .tag.ok {
+        color: var(--ok);
+        background: var(--ok-bg);
+      }
+      .tag.bad {
+        color: var(--bad);
+        background: var(--bad-bg);
+      }
+
+      .status {
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .error {
+        color: var(--bad);
+        font-size: 14px;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 0;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .field input[type="number"] {
+        font: inherit;
+        font-size: 15px;
+        color: var(--ink);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px 12px;
+        width: 100%;
+        min-width: 0;
+      }
+      .field input[type="number"]:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .foot {
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="index.html">← All tools</a>
+      <header>
+        <h1>Sticker Maker</h1>
+        <p class="sub">
+          Make a Discord sticker from a GIF or PNG. Everything runs in your
+          browser, so the file is never uploaded.
+        </p>
+      </header>
+
+      <section class="card">
+        <label class="drop" id="drop">
+          <input
+            id="file"
+            type="file"
+            accept="image/png,image/gif,image/webp,image/jpeg"
+            hidden
+          />
+          <span class="drop-title">Choose a GIF or PNG</span>
+          <span class="note">or drop one here</span>
+        </label>
+        <p class="note" id="fileInfo"></p>
+        <p class="error" id="error" hidden></p>
+      </section>
+
+      <section class="card col">
+        <div id="stickerOnly" class="col">
+          <fieldset>
+            <legend>Sticker type</legend>
+            <label class="opt"
+              ><input type="radio" name="kind" value="anim" checked />
+              Animated</label
+            >
+            <label class="opt"
+              ><input type="radio" name="kind" value="static" /> Static</label
+            >
+          </fieldset>
+          <label class="field"
+            >Smoothness (animated only)
+            <select id="fps">
+              <option value="25">Smoothest, up to 25 fps</option>
+              <option value="20" selected>Smooth, up to 20 fps</option>
+              <option value="15">Balanced, up to 15 fps</option>
+              <option value="10">Smallest file, up to 10 fps</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="field"
+          >Fit
+          <select id="fit">
+            <option value="fit">Whole image, centered</option>
+            <option value="crop">Fill the box and crop the edges</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="card" id="result" hidden>
+        <div class="preview"><img id="preview" alt="Sticker preview" /></div>
+        <ul class="checks" id="checks"></ul>
+        <p class="note">
+          To save it, right-click the preview (or long-press on a phone) and
+          choose save image. Save it as sticker.png.
+        </p>
+        <p class="status" id="status"></p>
+      </section>
+
+      <p class="foot">
+        Discord's limits: 320 × 320 px, under 512 KB, and animated stickers up
+        to 5 seconds. Discord can change these, so check its sticker guidelines.
+      </p>
+    </main>
+
+    <script>
+      const SIZE = 320;
+      const MAX_BYTES = 512 * 1024;
+      const MAX_MS = 5000;
+
+      const $ = (id) => document.getElementById(id);
+      const fileInput = $("file");
+      const drop = $("drop");
+      const fitSel = $("fit");
+      const errorEl = $("error");
+      const resultEl = $("result");
+      const previewEl = $("preview");
+      const checksEl = $("checks");
+      const statusEl = $("status");
+      const fileInfo = $("fileInfo");
+
+      let source = null;
+      let runId = 0;
+      let currentUrl = null;
+
+      const kb = (n) => (n / 1024).toFixed(0) + " KB";
+
+      function guessType(name) {
+        if (/\.gif$/i.test(name)) return "image/gif";
+        if (/\.png$/i.test(name)) return "image/png";
+        if (/\.webp$/i.test(name)) return "image/webp";
+        return "image/jpeg";
+      }
+
+      function loadImg(url) {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = url;
+        });
+      }
+
+      async function decodeFile(file) {
+        const buf = await file.arrayBuffer();
+        const type = file.type || guessType(file.name);
+
+        if (window.ImageDecoder && type !== "image/jpeg") {
+          try {
+            const dec = new ImageDecoder({ data: buf, type });
+            await dec.tracks.ready;
+            const count = dec.tracks.selectedTrack.frameCount;
+            const frames = [];
+            for (let i = 0; i < count; i++) {
+              const { image } = await dec.decode({ frameIndex: i });
+              const src = await createImageBitmap(image);
+              const ms = image.duration ? image.duration / 1000 : 100;
+              frames.push({ src, ms: Math.max(20, ms) });
+              image.close();
+            }
+            dec.close();
+            return { frames, animated: count > 1 };
+          } catch (e) {}
+        }
+
+        const img = await loadImg(
+          URL.createObjectURL(new Blob([buf], { type })),
+        );
+        return { frames: [{ src: img, ms: 100 }], animated: false };
+      }
+
+      function drawFit(src, mode) {
+        const w = src.naturalWidth || src.width;
+        const h = src.naturalHeight || src.height;
+        const c = document.createElement("canvas");
+        c.width = c.height = SIZE;
+        const ctx = c.getContext("2d");
+        ctx.imageSmoothingQuality = "high";
+        const s =
+          mode === "crop"
+            ? Math.max(SIZE / w, SIZE / h)
+            : Math.min(SIZE / w, SIZE / h);
+        const dw = w * s;
+        const dh = h * s;
+        ctx.drawImage(src, (SIZE - dw) / 2, (SIZE - dh) / 2, dw, dh);
+        return c;
+      }
+
+      function canvasPng(c) {
+        return new Promise((resolve, reject) => {
+          c.toBlob(async (b) => {
+            if (!b) return reject(new Error("encode failed"));
+            resolve(new Uint8Array(await b.arrayBuffer()));
+          }, "image/png");
+        });
+      }
+
+      function pixelsOf(canvas) {
+        return canvas.getContext("2d").getImageData(0, 0, SIZE, SIZE).data;
+      }
+
+      const CRC_TABLE = (() => {
+        const t = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+          let c = n;
+          for (let k = 0; k < 8; k++)
+            c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+          t[n] = c >>> 0;
+        }
+        return t;
+      })();
+
+      function crc32(bytes) {
+        let c = 0xffffffff;
+        for (let i = 0; i < bytes.length; i++)
+          c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+        return (c ^ 0xffffffff) >>> 0;
+      }
+
+      function chunk(type, data) {
+        const out = new Uint8Array(12 + data.length);
+        const dv = new DataView(out.buffer);
+        dv.setUint32(0, data.length);
+        for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i);
+        out.set(data, 8);
+        dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length)));
+        return out;
+      }
+
+      function pngChunks(bytes) {
+        const dv = new DataView(
+          bytes.buffer,
+          bytes.byteOffset,
+          bytes.byteLength,
+        );
+        const out = [];
+        let p = 8;
+        while (p < bytes.length) {
+          const len = dv.getUint32(p);
+          const type = String.fromCharCode(...bytes.subarray(p + 4, p + 8));
+          out.push({ type, data: bytes.subarray(p + 8, p + 8 + len) });
+          p += 12 + len;
+        }
+        return out;
+      }
+
+      function concat(arrs) {
+        const n = arrs.reduce((s, a) => s + a.length, 0);
+        const out = new Uint8Array(n);
+        let p = 0;
+        for (const a of arrs) {
+          out.set(a, p);
+          p += a.length;
+        }
+        return out;
+      }
+
+      function frameControl(seq, ms) {
+        const d = new Uint8Array(26);
+        const v = new DataView(d.buffer);
+        v.setUint32(0, seq);
+        v.setUint32(4, SIZE);
+        v.setUint32(8, SIZE);
+        v.setUint32(12, 0);
+        v.setUint32(16, 0);
+        v.setUint16(20, Math.max(1, Math.round(ms)));
+        v.setUint16(22, 1000);
+        d[24] = 0;
+        d[25] = 0;
+        return d;
+      }
+
+      const SIG = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
+
+      function ihdrChunk() {
+        const d = new Uint8Array(13);
+        const v = new DataView(d.buffer);
+        v.setUint32(0, SIZE);
+        v.setUint32(4, SIZE);
+        d[8] = 8;
+        d[9] = 3;
+        return chunk("IHDR", d);
+      }
+
+      function paletteChunks(colors) {
+        const plte = new Uint8Array(256 * 3);
+        colors.forEach(([r, g, b], i) => {
+          plte[(i + 1) * 3] = Math.round(r);
+          plte[(i + 1) * 3 + 1] = Math.round(g);
+          plte[(i + 1) * 3 + 2] = Math.round(b);
+        });
+        return [chunk("PLTE", plte), chunk("tRNS", new Uint8Array([0]))];
+      }
+
+      function makePalette(pixelSets) {
+        const count = new Uint32Array(32768);
+        const sumR = new Float64Array(32768);
+        const sumG = new Float64Array(32768);
+        const sumB = new Float64Array(32768);
+        for (const px of pixelSets) {
+          for (let p = 0; p < px.length; p += 4) {
+            if (px[p + 3] < 128) continue;
+            const r = px[p],
+              g = px[p + 1],
+              b = px[p + 2];
+            const k = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+            count[k]++;
+            sumR[k] += r;
+            sumG[k] += g;
+            sumB[k] += b;
+          }
+        }
+        const keys = [];
+        for (let k = 0; k < 32768; k++) if (count[k]) keys.push(k);
+        keys.sort((a, b) => count[b] - count[a]);
+        return keys
+          .slice(0, 255)
+          .map((k) => [
+            sumR[k] / count[k],
+            sumG[k] / count[k],
+            sumB[k] / count[k],
+          ]);
+      }
+
+      function makeMapper(colors) {
+        const lut = new Int16Array(32768).fill(-1);
+        return (r, g, b, a) => {
+          if (a < 128) return 0;
+          const k = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+          if (lut[k] < 0) {
+            const cr = ((k >> 10) << 3) + 4;
+            const cg = (((k >> 5) & 31) << 3) + 4;
+            const cb = ((k & 31) << 3) + 4;
+            let best = 0;
+            let bestD = Infinity;
+            for (let i = 0; i < colors.length; i++) {
+              const dr = colors[i][0] - cr,
+                dg = colors[i][1] - cg,
+                db = colors[i][2] - cb;
+              const d = dr * dr + dg * dg + db * db;
+              if (d < bestD) {
+                bestD = d;
+                best = i + 1;
+              }
+            }
+            lut[k] = best;
+          }
+          return lut[k];
+        };
+      }
+
+      function indexedScanlines(px, map) {
+        const raw = new Uint8Array(SIZE * SIZE + SIZE);
+        let o = 0;
+        for (let y = 0; y < SIZE; y++) {
+          raw[o++] = 0;
+          for (let x = 0; x < SIZE; x++) {
+            const p = (y * SIZE + x) * 4;
+            raw[o++] = map(px[p], px[p + 1], px[p + 2], px[p + 3]);
+          }
+        }
+        return raw;
+      }
+
+      async function zlib(bytes) {
+        const stream = new Blob([bytes])
+          .stream()
+          .pipeThrough(new CompressionStream("deflate"));
+        return new Uint8Array(await new Response(stream).arrayBuffer());
+      }
+
+      async function encodeAnimated(pixelFrames, list, colors) {
+        const map = makeMapper(colors);
+        const actl = new Uint8Array(8);
+        new DataView(actl.buffer).setUint32(0, list.length);
+        const parts = [
+          SIG,
+          ihdrChunk(),
+          ...paletteChunks(colors),
+          chunk("acTL", actl),
+        ];
+        let seq = 0;
+        for (let i = 0; i < pixelFrames.length; i++) {
+          const z = await zlib(indexedScanlines(pixelFrames[i], map));
+          parts.push(chunk("fcTL", frameControl(seq++, list[i].ms)));
+          if (i === 0) {
+            parts.push(chunk("IDAT", z));
+          } else {
+            const body = new Uint8Array(4 + z.length);
+            new DataView(body.buffer).setUint32(0, seq++);
+            body.set(z, 4);
+            parts.push(chunk("fdAT", body));
+          }
+        }
+        parts.push(chunk("IEND", new Uint8Array(0)));
+        return new Blob(parts, { type: "image/png" });
+      }
+
+      async function encodeStatic(px, colors) {
+        const map = makeMapper(colors);
+        const z = await zlib(indexedScanlines(px, map));
+        const parts = [
+          SIG,
+          ihdrChunk(),
+          ...paletteChunks(colors),
+          chunk("IDAT", z),
+          chunk("IEND", new Uint8Array(0)),
+        ];
+        return new Blob(parts, { type: "image/png" });
+      }
+
+      function sampleAt(intervalMs) {
+        const frames = source.frames;
+        const total = frames.reduce((s, f) => s + f.ms, 0);
+        const end = Math.min(total, MAX_MS);
+        const step = Math.round(intervalMs);
+        const list = [];
+        let i = 0;
+        let start = 0;
+        for (let t = 0; t < end - 1; t += step) {
+          while (i < frames.length - 1 && start + frames[i].ms <= t) {
+            start += frames[i].ms;
+            i++;
+          }
+          list.push({ idx: i, ms: step });
+        }
+        return { list, total: list.length * step };
+      }
+
+      function row(ok, text) {
+        const li = document.createElement("li");
+        const tag = document.createElement("span");
+        tag.className = "tag " + (ok ? "ok" : "bad");
+        tag.textContent = ok ? "OK" : "Fix";
+        const label = document.createElement("span");
+        label.textContent = text;
+        li.append(tag, label);
+        return li;
+      }
+
+      function setStatus(text) {
+        statusEl.textContent = text || "";
+      }
+
+      function showError(text) {
+        errorEl.textContent = text;
+        errorEl.hidden = !text;
+      }
+
+      function showResult(blob, checks, message) {
+        checksEl.replaceChildren(...checks);
+        if (currentUrl) URL.revokeObjectURL(currentUrl);
+        currentUrl = URL.createObjectURL(blob);
+        previewEl.src = currentUrl;
+        setStatus(message || "");
+      }
+
+      async function build() {
+        if (!source) return;
+        const my = ++runId;
+        const fit = fitSel.value;
+        resultEl.hidden = false;
+        setStatus("Working…");
+        const kind = document.querySelector('input[name="kind"]:checked').value;
+
+        let blob;
+        const checks = [];
+        const total = source.frames.reduce((s, f) => s + f.ms, 0);
+
+        try {
+          if (kind === "static") {
+            const canvas = drawFit(source.frames[0].src, fit);
+            const lossless = await canvasPng(canvas);
+            if (my !== runId) return;
+            if (lossless.length <= MAX_BYTES) {
+              blob = new Blob([lossless], { type: "image/png" });
+              checks.push(row(true, "Static PNG, full colour"));
+            } else {
+              const px = pixelsOf(canvas);
+              blob = await encodeStatic(px, makePalette([px]));
+              if (my !== runId) return;
+              checks.push(
+                row(true, "Static PNG, colours reduced to 255 to fit"),
+              );
+            }
+          } else {
+            const rgbaCache = [];
+            const rgbaOf = (i) =>
+              rgbaCache[i] ||
+              (rgbaCache[i] = pixelsOf(drawFit(source.frames[i].src, fit)));
+            const wantedFps = Number($("fps").value);
+            const startInterval = 1000 / wantedFps;
+            let interval = startInterval;
+            let seq;
+            while (true) {
+              seq = sampleAt(interval);
+              const pixels = seq.list.map((f) => rgbaOf(f.idx));
+              if (my !== runId) return;
+              const colors = makePalette(
+                [...new Set(seq.list.map((f) => f.idx))].map(rgbaOf),
+              );
+              blob = await encodeAnimated(pixels, seq.list, colors);
+              if (my !== runId) return;
+              if (
+                blob.size <= MAX_BYTES ||
+                seq.list.length <= 1 ||
+                interval >= 400
+              )
+                break;
+              interval *= 1.25;
+            }
+            const shownFps = 1000 / Math.round(interval);
+            checks.push(
+              row(
+                true,
+                `Animated PNG, ${seq.list.length} frames at about ${shownFps.toFixed(0)} fps, colours reduced to 255`,
+              ),
+            );
+            checks.push(
+              row(
+                seq.total <= MAX_MS,
+                `Length ${(seq.total / 1000).toFixed(1)} s (limit 5 s)`,
+              ),
+            );
+            if (total > MAX_MS)
+              checks.push(
+                row(
+                  true,
+                  `Cut to the first 5 seconds of a ${(total / 1000).toFixed(1)} s animation`,
+                ),
+              );
+            if (Math.round(interval) > Math.round(startInterval)) {
+              checks.push(
+                row(
+                  true,
+                  `Lowered from ${wantedFps} fps to fit the 512 KB limit`,
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          if (my !== runId) return;
+          setStatus(
+            "Something went wrong while making the sticker. Try another file.",
+          );
+          return;
+        }
+
+        if (my !== runId) return;
+
+        checks.unshift(row(true, "320 × 320 px"));
+        checks.push(
+          row(
+            blob.size <= MAX_BYTES,
+            `File size ${kb(blob.size)} (limit 512 KB)`,
+          ),
+        );
+        checks.push(
+          row(
+            true,
+            kind === "static"
+              ? "Saved as sticker.png"
+              : "Saved as sticker.png (animated PNG)",
+          ),
+        );
+
+        showResult(
+          blob,
+          checks,
+          blob.size > MAX_BYTES
+            ? "Still over 512 KB. Try a shorter clip, a simpler image, or the static type."
+            : "",
+        );
+      }
+
+      async function handle(file) {
+        if (!file) return;
+        if (
+          !/^image\//.test(file.type) &&
+          !/\.(gif|png|webp|jpe?g)$/i.test(file.name)
+        ) {
+          showError("That file isn't a GIF, PNG, WebP or JPEG.");
+          return;
+        }
+        showError("");
+        fileInfo.textContent = `${file.name} · ${kb(file.size)}`;
+        setStatus("Reading file…");
+        resultEl.hidden = false;
+        try {
+          source = await decodeFile(file);
+        } catch (e) {
+          source = null;
+          resultEl.hidden = true;
+          showError("Couldn't read that file.");
+          return;
+        }
+        fileInfo.textContent += source.animated
+          ? ` · ${source.frames.length} frames`
+          : " · still image";
+        await build();
+      }
+
+      fileInput.addEventListener("change", (e) => handle(e.target.files[0]));
+
+      ["dragenter", "dragover"].forEach((type) =>
+        drop.addEventListener(type, (e) => {
+          e.preventDefault();
+          drop.classList.add("over");
+        }),
+      );
+      ["dragleave", "drop"].forEach((type) =>
+        drop.addEventListener(type, (e) => {
+          e.preventDefault();
+          drop.classList.remove("over");
+        }),
+      );
+      drop.addEventListener("drop", (e) => handle(e.dataTransfer.files[0]));
+
+      document
+        .querySelectorAll('input[name="kind"]')
+        .forEach((r) => r.addEventListener("change", build));
+      fitSel.addEventListener("change", build);
+      $("fps").addEventListener("change", build);
+    </script>
+  </body>
+</html>
