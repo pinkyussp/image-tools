@@ -5,7 +5,7 @@
 
 <br/>
 
-**[ open the toolbox ](https://github.com/pinkyussp/image-tools)**
+**[ open the toolbox ](https://pinkyussp.github.io/image-tools/)**
 
 a collection of handy image utilities, all in one place.
 
