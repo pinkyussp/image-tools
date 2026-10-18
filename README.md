@@ -85,5 +85,4 @@ See the repository's license file for usage and redistribution terms.
 
 </div>
 =======
-# image-tools
->>>>>>> 45e481ed52567a20b376d5136ada3e860b1ea21b
+
