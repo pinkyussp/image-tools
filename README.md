@@ -83,5 +83,4 @@ See the repository's license file for usage and redistribution terms.
 <sub>built with care ♡ by <a href="https://github.com/pinkyussp">pinkyussp</a></sub>
 
 </div>
-=======
 
