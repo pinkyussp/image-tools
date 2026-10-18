@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <div align="center">
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=1C1B24&height=140&section=header&text=image%20tools&fontSize=42&fontColor=F4F0FF&fontAlignY=45&desc=a%20tiny%20workshop%20for%20your%20images&descSize=14&descColor=A9A3C7&animation=fadeIn" width="100%" />
@@ -83,3 +84,6 @@ See the repository's license file for usage and redistribution terms.
 <sub>built with care ♡ by <a href="https://github.com/pinkyussp">pinkyussp</a></sub>
 
 </div>
+=======
+# image-tools
+>>>>>>> 45e481ed52567a20b376d5136ada3e860b1ea21b
