@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <div align="center">
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=1C1B24&height=140&section=header&text=image%20tools&fontSize=42&fontColor=F4F0FF&fontAlignY=45&desc=a%20tiny%20workshop%20for%20your%20images&descSize=14&descColor=A9A3C7&animation=fadeIn" width="100%" />
