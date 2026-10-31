@@ -368,6 +368,17 @@ transition: border-color 0.15s;
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 
+
+      /* ---- added: save + reset ---- */
+      .save-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .tool-save { font: inherit; font-size: 16px; font-weight: 600; min-width: 160px; border: none; border-radius: 12px; padding: 12px 24px; background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer; }
+      .tool-save:hover { filter: brightness(1.08); }
+      .tool-save:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+      .tool-reset { font: inherit; font-size: 14px; color: var(--accent); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+      .tool-reset:hover { border-color: var(--accent); }
+      .opts-foot { display: flex; justify-content: flex-end; }
+      .tool-mini { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
+      .tool-mini:hover { border-color: var(--accent); }
 </style>
 
 </head>
@@ -517,10 +528,14 @@ transition: border-color 0.15s;
 <div class="preview"><img id="preview" alt="Result preview"></div>
 
 <div id="frames" class="frames" hidden></div>
+    <div class="save-row" id="saveRow" hidden>
+      <button type="button" class="tool-save" id="saveBtn">Save</button>
+      <span class="note">Saves this picture to your device</span>
+    </div>
+
 
 <ul class="checks" id="checks"></ul>
 
-<p class="note">Right-click the preview (or long-press on a phone) to save it.</p>
 
 <p class="status" id="status"></p>
 
@@ -1160,7 +1175,7 @@ if (!ok || my !== runId) return;
 
 showChecks(checks);
 
-setStatus("Right-click any frame to save it.");
+setStatus("Use Save under any frame to keep it.");
 
 return;
 
@@ -1514,6 +1529,105 @@ Ez.refresh();
 
 </script>
 
+<script>
+(() => {
+  const SLUG = "caption";
+  const $ = id => document.getElementById(id);
+  const EXT = { "image/gif": "gif", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+
+  const baseName = () => {
+    const first = ($("fileInfo").textContent || "").split(" · ")[0].trim();
+    const m = first.match(/^(.+)\.(gif|png|jpe?g|webp)$/i);
+    const name = m ? m[1].replace(/[^\w .-]+/g, "").trim() : "";
+    return name || "image";
+  };
+
+  const saveAs = (url, name) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const preview = $("preview");
+  const saveRow = $("saveRow");
+  const saveBtn = $("saveBtn");
+  let lastBlob = null;
+  let lastSrc = "";
+
+  async function sync() {
+    const showMain = !!preview.src && !preview.hidden;
+    if (saveRow.hidden === showMain) saveRow.hidden = !showMain;
+    if (showMain && preview.src !== lastSrc) {
+      const s = preview.src;
+      lastSrc = s;
+      const b = await fetch(s).then(r => r.blob()).catch(() => null);
+      if (s === lastSrc) lastBlob = b;
+    }
+    $("frames").querySelectorAll("figure").forEach((fig, i) => {
+      if (fig.querySelector(".tool-mini")) return;
+      const img = fig.querySelector("img");
+      if (!img) return;
+      const a = document.createElement("a");
+      a.className = "tool-mini";
+      a.textContent = "Save";
+      a.href = img.src;
+      a.download = `${baseName()}-${SLUG}-frame${i + 1}.png`;
+      fig.append(a);
+    });
+  }
+  new MutationObserver(() => sync()).observe($("result"), {
+    subtree: true, childList: true, attributes: true, attributeFilter: ["src", "hidden"]
+  });
+
+  saveBtn.addEventListener("click", () => {
+    if (!lastBlob) return;
+    const url = URL.createObjectURL(lastBlob);
+    saveAs(url, `${baseName()}-${SLUG}.${EXT[lastBlob.type] || "png"}`);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+
+  const opts = $("opts");
+  const fields = [...opts.querySelectorAll("input, select")];
+  let base = fields.map(el => ({
+    el,
+    value: el.tagName === "SELECT" ? ([...el.options].find(o => o.defaultSelected) || el.options[0]).value : el.defaultValue,
+    checked: el.defaultChecked
+  }));
+  let snapped = false;
+  new MutationObserver((_, obs) => {
+    if (snapped || !$("fileInfo").textContent) return;
+    snapped = true;
+    obs.disconnect();
+    base = fields.map(el => ({ el, value: el.value, checked: el.checked }));
+  }).observe($("fileInfo"), { childList: true, characterData: true, subtree: true });
+
+  const foot = document.createElement("div");
+  foot.className = "opts-foot";
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "tool-reset";
+  resetBtn.textContent = "Reset options";
+  foot.append(resetBtn);
+  opts.append(foot);
+  resetBtn.addEventListener("click", () => {
+    for (const s of base) {
+      const el = s.el;
+      if (el.type === "checkbox" || el.type === "radio") {
+        if (el.checked === s.checked) continue;
+        el.checked = s.checked;
+      } else {
+        if (el.value === s.value) continue;
+        el.value = s.value;
+      }
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+})();
+</script>
 </body>
 
 </html>
