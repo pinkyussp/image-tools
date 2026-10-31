@@ -414,15 +414,14 @@
       </section>
 
       <p class="foot">
-        Discord's limits: 320 × 320 px, under 512 KB, and animated stickers up
-        to 5 seconds. Discord can change these, so check its sticker guidelines.
+        Discord's limits: 320 × 320 px and under 512 KB. Discord can change
+        these, so check its sticker guidelines.
       </p>
     </main>
 
     <script>
       const SIZE = 320;
       const MAX_BYTES = 512 * 1024;
-      const MAX_MS = 5000;
 
       const $ = (id) => document.getElementById(id);
       const fileInput = $("file");
@@ -728,7 +727,7 @@
       function sampleAt(intervalMs) {
         const frames = source.frames;
         const total = frames.reduce((s, f) => s + f.ms, 0);
-        const end = Math.min(total, MAX_MS);
+        const end = total;
         const step = Math.round(intervalMs);
         const list = [];
         let i = 0;
@@ -775,20 +774,12 @@
       function updateGuide(kind, total, blob) {
         const guide = document.getElementById("guide");
         const text = document.getElementById("guideText");
-        const tooLong = kind === "anim" && total > MAX_MS;
         const tooBig = blob.size > MAX_BYTES;
-        if (!tooLong && !tooBig) {
+        if (!tooBig) {
           guide.hidden = true;
           return;
         }
         const lines = [];
-        if (tooLong) {
-          const secs = (total / 1000).toFixed(1);
-          const factor = (Math.ceil((total / 4800) * 10) / 10).toFixed(1);
-          lines.push(
-            `Your animation is ${secs} s long, but Discord allows 5 s. This sticker is cut at 5 s, so the end is lost. To keep the whole animation, use Speed to make it about ${factor}× faster.`,
-          );
-        }
         if (tooBig) {
           lines.push(
             "The file is over 512 KB. Use Optimize to remove frames and colours, or Resize to make the picture smaller.",
@@ -860,18 +851,8 @@
               ),
             );
             checks.push(
-              row(
-                seq.total <= MAX_MS,
-                `Length ${(seq.total / 1000).toFixed(1)} s (limit 5 s)`,
-              ),
+              row(true, `Length ${(seq.total / 1000).toFixed(1)} s`),
             );
-            if (total > MAX_MS)
-              checks.push(
-                row(
-                  true,
-                  `Cut to the first 5 seconds of a ${(total / 1000).toFixed(1)} s animation`,
-                ),
-              );
             if (Math.round(interval) > Math.round(startInterval)) {
               checks.push(
                 row(
