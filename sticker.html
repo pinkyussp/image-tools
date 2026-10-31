@@ -941,6 +941,11 @@
         fileInfo.textContent += source.animated
           ? ` · ${source.frames.length} frames`
           : " · still image";
+        if (/\.(gif|webp)$/i.test(file.name) && !source.animated) {
+          showError(
+            "Only one frame could be read from this GIF, so the sticker will not move. If it should be animated, open this page in Chrome or Edge and try again.",
+          );
+        }
         await build();
       }
 
