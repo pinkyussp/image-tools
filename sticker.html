@@ -325,7 +325,14 @@
       .opts-foot { display: flex; justify-content: flex-end; }
       .tool-mini { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
       .tool-mini:hover { border-color: var(--accent); }
-</style>
+
+      /* ---- guide when the sticker needs fixing ---- */
+      .guide { display: flex; flex-direction: column; gap: 10px; background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 12px; padding: 14px; font-size: 14px; }
+      .guide p { color: var(--ink); }
+      .guide-links { display: flex; flex-wrap: wrap; gap: 8px; }
+      .tool-link { font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; }
+      .tool-link:hover { border-color: var(--accent); }
+    </style>
   </head>
   <body>
     <main>
@@ -395,6 +402,15 @@
 
         <ul class="checks" id="checks"></ul>
         <p class="status" id="status"></p>
+        <div class="guide" id="guide" hidden>
+          <p id="guideText"></p>
+          <div class="guide-links">
+            <a class="tool-link" href="speed.html" target="_blank" rel="noopener">Open Speed</a>
+            <a class="tool-link" href="optimize.html" target="_blank" rel="noopener">Open Optimize</a>
+            <a class="tool-link" href="resize.html" target="_blank" rel="noopener">Open Resize</a>
+          </div>
+          <p class="note">These open in a new tab. Load your original GIF there, make the fix, save it, then come back here and choose the new file.</p>
+        </div>
       </section>
 
       <p class="foot">
@@ -756,6 +772,32 @@
         setStatus(message || "");
       }
 
+      function updateGuide(kind, total, blob) {
+        const guide = document.getElementById("guide");
+        const text = document.getElementById("guideText");
+        const tooLong = kind === "anim" && total > MAX_MS;
+        const tooBig = blob.size > MAX_BYTES;
+        if (!tooLong && !tooBig) {
+          guide.hidden = true;
+          return;
+        }
+        const lines = [];
+        if (tooLong) {
+          const secs = (total / 1000).toFixed(1);
+          const factor = (Math.ceil((total / 4800) * 10) / 10).toFixed(1);
+          lines.push(
+            `Your animation is ${secs} s long, but Discord allows 5 s. This sticker is cut at 5 s, so the end is lost. To keep the whole animation, use Speed to make it about ${factor}× faster.`,
+          );
+        }
+        if (tooBig) {
+          lines.push(
+            "The file is over 512 KB. Use Optimize to remove frames and colours, or Resize to make the picture smaller.",
+          );
+        }
+        text.textContent = lines.join(" ");
+        guide.hidden = false;
+      }
+
       async function build() {
         if (!source) return;
         const my = ++runId;
@@ -865,6 +907,7 @@
           ),
         );
 
+        updateGuide(kind, total, blob);
         showResult(
           blob,
           checks,
