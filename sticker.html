@@ -314,7 +314,7 @@
           transition: none !important;
         }
       }
-    
+
       /* ---- added: save + reset ---- */
       .save-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
       .tool-save { font: inherit; font-size: 16px; font-weight: 600; min-width: 160px; border: none; border-radius: 12px; padding: 12px 24px; background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer; }
@@ -375,9 +375,12 @@
           <label class="field"
             >Smoothness (animated only)
             <select id="fps">
-              <option value="25">Smoothest, up to 25 fps</option>
-              <option value="20" selected>Smooth, up to 20 fps</option>
-              <option value="15">Balanced, up to 15 fps</option>
+              <option value="60">Smoothest, up to 60 fps</option>
+              <option value="40">Ultra smooth, up to 40 fps</option>
+              <option value="30">Very smooth, up to 30 fps</option>
+              <option value="25">Smooth, up to 25 fps</option>
+              <option value="20" selected>Balanced, up to 20 fps</option>
+              <option value="15">Smaller file, up to 15 fps</option>
               <option value="10">Smallest file, up to 10 fps</option>
             </select>
           </label>
