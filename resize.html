@@ -204,7 +204,117 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width
       .opts-foot { display: flex; justify-content: flex-end; }
       .tool-mini { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
       .tool-mini:hover { border-color: var(--accent); }
-</style>
+
+      /* ---- site-wide usability pass ---- */
+      html { -webkit-text-size-adjust: 100%; }
+      input, select, textarea { font-size: 16px; }
+      select, .field input[type="number"], .field input[type="text"], .field input[type="color"] {
+        min-height: 44px;
+      }
+      .field { color: var(--ink); font-size: 14px; font-weight: 600; }
+      .field input[type="color"] { min-height: 44px; }
+      .note { line-height: 1.45; }
+      .card {
+        box-shadow: 0 1px 2px rgba(31, 27, 46, 0.04), 0 8px 24px rgba(31, 27, 46, 0.05);
+      }
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .back:hover { color: var(--ink); }
+      .drop {
+        min-height: 150px;
+        border-width: 2px;
+        background: var(--card);
+      }
+      .drop::before {
+        content: "+";
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--accent-ink, #fff);
+        font-size: 30px;
+        font-weight: 400;
+        line-height: 1;
+        margin-bottom: 6px;
+        box-shadow: 0 6px 16px rgba(109, 94, 252, 0.28);
+      }
+      .drop:hover, .drop:focus-within, .drop.over {
+        border-color: var(--accent);
+        background: var(--bg);
+      }
+      .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .drop-title { font-size: 16px; }
+      .tool-save, .tool-reset, .tool-mini, .tool-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tool-save { box-shadow: 0 6px 18px rgba(109, 94, 252, 0.25); }
+      .tool-mini { min-height: 32px; }
+      .tool-save:disabled { box-shadow: none; }
+      .status { min-height: 1.5em; font-weight: 500; }
+      .error { font-weight: 600; }
+      .preview { min-height: 200px; }
+      .checks li { align-items: flex-start; }
+      .tag { margin-top: 1px; }
+      main { padding-bottom: 24px; }
+      @media (max-width: 480px) {
+        h1 { font-size: 24px; }
+        .row2 { grid-template-columns: 1fr; }
+        .card { padding: 16px; }
+        .preview { width: 100%; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .drop, .tool-save { transition: none !important; }
+      }
+    
+      /* ---- settings panel pass ---- */
+      .settings { gap: 0; }
+      .settings-tip {
+        font-size: 13px;
+        color: var(--muted);
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+      }
+      .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 0;
+        border-top: 1px solid var(--line);
+      }
+      .settings-group:first-of-type { border-top: none; padding-top: 4px; }
+      .settings-group h3 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .settings .hint {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 400;
+        color: var(--muted);
+        line-height: 1.4;
+        margin-top: -2px;
+      }
+      .settings .opt { font-weight: 600; font-size: 15px; color: var(--ink); min-height: 44px; }
+      .settings .opt input { width: 20px; height: 20px; }
+      .settings .field + .hint { margin-top: 0; }
+    </style>
 </head>
 <body>
 <main>
@@ -221,58 +331,67 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width
       <span class="note">or drop one here</span>
     </label>
     <p class="note" id="fileInfo"></p>
-    <p class="error" id="error" hidden></p>
+    <p class="error" id="error" role="alert" hidden></p>
   </section>
 
-  <section class="card col" id="opts">
-
-      <label class="field">Size preset
-        <select id="preset">
-          <option value="custom">Custom</option>
-          <option value="orig" selected>Original size</option>
-          <option value="128x128">Small icon, 128 × 128</option>
-          <option value="512x512">Square, 512 × 512</option>
-          <option value="1080x1080">Square, 1080 × 1080</option>
-          <option value="1920x1080">Landscape, 1920 × 1080</option>
-          <option value="1080x1920">Portrait, 1080 × 1920</option>
-          <option value="1200x630">Link preview, 1200 × 630</option>
-        </select>
-      </label>
-      <div class="row2">
-        <label class="field">Width (px)<input id="w" type="number" min="1" max="4000"></label>
-        <label class="field">Height (px)<input id="h" type="number" min="1" max="4000"></label>
-      </div>
-      <label class="opt"><input id="keep" type="checkbox" checked> Keep proportions when typing</label>
-      <label class="field">Fit
-        <select id="fit">
-          <option value="fit">Whole image, centred</option>
-          <option value="crop">Fill the box and crop the edges</option>
-        </select>
-      </label>
-
-
-      <label class="field">Output format
-        <select id="format"><option value="auto" selected>Same as the picture (GIF if animated)</option>
-          <option value="gif">GIF (animated)</option>
-          <option value="png">PNG (keeps transparency)</option>
-          <option value="jpeg">JPEG (smallest for photos)</option>
-          <option value="webp">WebP</option>
-          <option value="split">Each frame as its own image</option></select>
-      </label>
-      <label class="field">Colours for GIF
-        <select id="colors">
-          <option value="256" selected>256 (best quality)</option>
-          <option value="128">128</option>
-          <option value="64">64</option>
-          <option value="32">32</option>
-          <option value="16">16 (smallest)</option>
-        </select>
-      </label>
-      <label class="field">Max file size in KB (optional)
-        <input id="maxkb" type="number" min="1" placeholder="No limit">
-      </label>
-
-  </section>
+  <section class="card col settings" id="opts">
+        <p class="settings-tip">Changes update the result automatically.</p>
+        <div class="settings-group">
+          <h3>Size</h3>
+          <label class="field">Size preset
+            <select id="preset">
+              <option value="custom">Custom</option>
+              <option value="orig" selected>Original size</option>
+              <option value="128x128">Small icon, 128 × 128</option>
+              <option value="512x512">Square, 512 × 512</option>
+              <option value="1080x1080">Square, 1080 × 1080</option>
+              <option value="1920x1080">Landscape, 1920 × 1080</option>
+              <option value="1080x1920">Portrait, 1080 × 1920</option>
+              <option value="1200x630">Link preview, 1200 × 630</option>
+            </select>
+            <span class="hint">Pick a common size, or choose Custom to type your own.</span>
+          </label>
+          <div class="row2">
+            <label class="field">Width (px)<input id="w" type="number" min="1" max="4000"></label>
+            <label class="field">Height (px)<input id="h" type="number" min="1" max="4000"></label>
+          </div>
+          <label class="opt"><input id="keep" type="checkbox" checked> Keep proportions when typing</label>
+        </div>
+        
+        <div class="settings-group">
+          <h3>File type</h3>
+          <label class="field">Output type
+            <select id="format"><option value="auto" selected>Same as the picture (GIF if animated)</option><option value="gif">GIF (animated)</option><option value="png">PNG (keeps transparency)</option><option value="jpeg">JPEG (smallest for photos)</option><option value="webp">WebP</option><option value="split">Each frame as its own image</option></select>
+            <span class="hint">Same as the picture keeps the type you started with. PNG keeps see-through areas. JPEG is smallest for photos.</span>
+          </label>
+        </div>
+        <div class="settings-group">
+          <h3>Keep it small</h3>
+          <label class="field">Colours (GIF only)
+            <select id="colors">
+              <option value="256" selected>256 (best quality)</option>
+              <option value="128">128</option>
+              <option value="64">64</option>
+              <option value="32">32</option>
+              <option value="16">16 (smallest)</option>
+            </select>
+            <span class="hint">Fewer colours give a smaller GIF. 256 looks best.</span>
+          </label><label class="field">Largest file size (KB, optional)
+            <input id="maxkb" type="number" min="1" placeholder="No limit">
+            <span class="hint">The tool lowers quality or colours until the file fits.</span>
+          </label>
+        </div>
+      </section>
+        <div class="settings-group">
+          <h3>Fit inside the size</h3>
+          <label class="field">Fit
+            <select id="fit">
+              <option value="fit">Whole image, centred</option>
+              <option value="crop">Fill the box and crop the edges</option>
+            </select>
+            <span class="hint">Whole image keeps everything with spare space. Fill crops the edges.</span>
+          </label>
+        </div>
 
   <section class="card" id="result" hidden>
     <div class="preview"><img id="preview" alt="Result preview"></div>
@@ -283,7 +402,7 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width
     </div>
 
     <ul class="checks" id="checks"></ul>
-    <p class="status" id="status"></p>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
   </section>
 </main>
 <script>
