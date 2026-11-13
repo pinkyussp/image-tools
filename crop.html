@@ -314,6 +314,25 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width
       .settings .opt { font-weight: 600; font-size: 15px; color: var(--ink); min-height: 44px; }
       .settings .opt input { width: 20px; height: 20px; }
       .settings .field + .hint { margin-top: 0; }
+    
+      /* ---- region picker ---- */
+      .stage { position: relative; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 10px; overflow: hidden; background: var(--checker-a); }
+      .stage img { display: block; width: 100%; height: auto; pointer-events: none; }
+      .rbox { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); background: rgba(109, 94, 252, 0.14); cursor: move; touch-action: none; }
+      .rbox.dim { background: transparent; box-shadow: 0 0 0 9999px rgba(15, 12, 30, 0.55); }
+      .rbox.sel { border-color: #fff; }
+      .rbox.dim.sel { box-shadow: 0 0 0 9999px rgba(15, 12, 30, 0.55), 0 0 0 2px var(--accent); }
+      .rh { position: absolute; width: 22px; height: 22px; background: #fff; border: 2px solid var(--accent); border-radius: 50%; box-sizing: border-box; transform: translate(-50%, -50%); }
+      .rh-nw { left: 0; top: 0; transform: translate(0, 0); cursor: nwse-resize; }
+      .rh-n { left: 50%; top: 0; transform: translate(-50%, 0); cursor: ns-resize; }
+      .rh-ne { left: 100%; top: 0; transform: translate(-100%, 0); cursor: nesw-resize; }
+      .rh-e { left: 100%; top: 50%; transform: translate(-100%, -50%); cursor: ew-resize; }
+      .rh-se { left: 100%; top: 100%; transform: translate(-100%, -100%); cursor: nwse-resize; }
+      .rh-s { left: 50%; top: 100%; transform: translate(-50%, -100%); cursor: ns-resize; }
+      .rh-sw { left: 0; top: 100%; transform: translate(0, -100%); cursor: nesw-resize; }
+      .rh-w { left: 0; top: 50%; transform: translate(0, -50%); cursor: ew-resize; }
+      .pick-head { display: flex; flex-direction: column; gap: 4px; }
+      .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
     </style>
 </head>
 <body>
@@ -334,6 +353,16 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width
     <p class="error" id="error" role="alert" hidden></p>
   </section>
 
+  <section class="card col" id="pickCard" hidden>
+    <div class="pick-head">
+      <strong>Choose the area</strong>
+      <p class="note">Drag the box to move it, or drag a dot to resize it. The numbers in Settings follow the box, and typing a number moves the box too.</p>
+    </div>
+    <div class="stage" id="stage"><img id="srcImg" alt="Your picture"></div>
+    <div class="row-btns">
+      <button type="button" class="tool-reset" id="wholeBtn">Whole picture</button>
+    </div>
+  </section>
   <section class="card col settings" id="opts">
         <p class="settings-tip">Changes update the result automatically.</p>
         <div class="settings-group">
@@ -838,39 +867,214 @@ const Ez = (() => {
 
 </script>
 <script>
+
+const RegionEditor = (() => {
+  const MIN = 4;
+  const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  function create(cfg) {
+    const { stage, img, dim = false, ratio = () => 0, onChange = () => {}, onSelect = () => {} } = cfg;
+    let sw = 1, sh = 1, boxes = [], els = [], sel = -1, drag = null;
+
+    function style(i) {
+      const b = boxes[i], el = els[i];
+      if (!b || !el) return;
+      el.style.left = (b.x / sw * 100) + "%";
+      el.style.top = (b.y / sh * 100) + "%";
+      el.style.width = (b.w / sw * 100) + "%";
+      el.style.height = (b.h / sh * 100) + "%";
+      el.classList.toggle("sel", i === sel);
+    }
+    function render() {
+      els.forEach(el => el.remove());
+      els = boxes.map((_, i) => {
+        const el = document.createElement("div");
+        el.className = "rbox" + (dim ? " dim" : "");
+        el.dataset.i = i;
+        HANDLES.forEach(h => {
+          const d = document.createElement("span");
+          d.className = "rh rh-" + h;
+          d.dataset.h = h;
+          el.append(d);
+        });
+        stage.append(el);
+        return el;
+      });
+      els.forEach((_, i) => style(i));
+    }
+    function select(i) {
+      sel = i;
+      els.forEach((_, j) => style(j));
+      onSelect(i);
+    }
+
+    stage.addEventListener("pointerdown", e => {
+      const el = e.target.closest(".rbox");
+      if (!el) return;
+      e.preventDefault();
+      const i = +el.dataset.i;
+      select(i);
+      const r = img.getBoundingClientRect();
+      drag = { i, mode: e.target.dataset.h || "move", sx: e.clientX, sy: e.clientY, s: { ...boxes[i] }, k: sw / r.width };
+      el.setPointerCapture(e.pointerId);
+    });
+
+    stage.addEventListener("pointermove", e => {
+      if (!drag) return;
+      const { i, mode, s, k } = drag;
+      const dx = (e.clientX - drag.sx) * k, dy = (e.clientY - drag.sy) * k;
+      let l = s.x, t = s.y, r = s.x + s.w, b = s.y + s.h;
+      if (mode === "move") {
+        l = clamp(s.x + dx, 0, sw - s.w);
+        t = clamp(s.y + dy, 0, sh - s.h);
+        r = l + s.w;
+        b = t + s.h;
+      } else {
+        if (mode.includes("w")) l = clamp(s.x + dx, 0, r - MIN);
+        if (mode.includes("e")) r = clamp(s.x + s.w + dx, l + MIN, sw);
+        if (mode.includes("n")) t = clamp(s.y + dy, 0, b - MIN);
+        if (mode.includes("s")) b = clamp(s.y + s.h + dy, t + MIN, sh);
+        const kr = ratio();
+        if (kr) {
+          let w = r - l, h = b - t;
+          if (mode === "n" || mode === "s") w = h * kr; else h = w / kr;
+          if (w > sw) { w = sw; h = w / kr; }
+          if (h > sh) { h = sh; w = h * kr; }
+          const hasW = mode.includes("w"), hasE = mode.includes("e");
+          const hasN = mode.includes("n"), hasS = mode.includes("s");
+          let L = hasW ? r - w : (hasE ? l : s.x + s.w / 2 - w / 2);
+          let T = hasN ? b - h : (hasS ? t : s.y + s.h / 2 - h / 2);
+          L = clamp(L, 0, sw - w);
+          T = clamp(T, 0, sh - h);
+          l = L; t = T; r = L + w; b = T + h;
+        }
+      }
+      boxes[i] = { x: Math.round(l), y: Math.round(t), w: Math.max(1, Math.round(r - l)), h: Math.max(1, Math.round(b - t)) };
+      style(i);
+      onChange(i);
+    });
+    const end = () => { drag = null; };
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
+
+    return {
+      setSize(w, h) { sw = w; sh = h; els.forEach((_, i) => style(i)); },
+      setBoxes(list) {
+        boxes = list.map(b => ({ ...b }));
+        sel = boxes.length ? 0 : -1;
+        render();
+        onSelect(sel);
+      },
+      setBox(i, b) { boxes[i] = { ...b }; style(i); },
+      boxes: () => boxes.map(b => ({ ...b })),
+      selected: () => sel,
+      add() {
+        const w = Math.round(sw * 0.4), h = Math.round(sh * 0.4);
+        boxes.push({ x: Math.round((sw - w) / 2), y: Math.round((sh - h) / 2), w, h });
+        render();
+        select(boxes.length - 1);
+        onChange(boxes.length - 1);
+      },
+      removeSelected() {
+        if (sel < 0) return;
+        boxes.splice(sel, 1);
+        sel = boxes.length ? Math.min(sel, boxes.length - 1) : -1;
+        render();
+        onSelect(sel);
+        onChange(-1);
+      },
+    };
+  }
+  return { create };
+})();
+
+const cropStage = document.getElementById("stage");
+const cropImg = document.getElementById("srcImg");
+const cropPick = document.getElementById("pickCard");
+const ratioSel = document.getElementById("ratio");
+let imgW = 1, imgH = 1;
+const clampN = (v, a, b) => Math.min(b, Math.max(a, v));
+const ratioVal = () => {
+  if (ratioSel.value === "free") return 0;
+  const [a, b] = ratioSel.value.split(":").map(Number);
+  return a / b;
+};
+const setField = (id, v) => {
+  const el = document.getElementById(id);
+  if (el.value !== String(v)) el.value = v;
+};
+function writeInputs(b, skip) {
+  if (skip !== "cx") setField("cx", b.x);
+  if (skip !== "cy") setField("cy", b.y);
+  if (skip !== "cw") setField("cw", b.w);
+  if (skip !== "ch") setField("ch", b.h);
+}
+const editor = RegionEditor.create({
+  stage: cropStage,
+  img: cropImg,
+  dim: true,
+  ratio: ratioVal,
+  onChange: () => {
+    const b = editor.boxes()[0];
+    if (b) { writeInputs(b); Ez.refresh(); }
+  },
+});
+function fromInputs(e) {
+  if (!imgW) return;
+  const id = e && e.target ? e.target.id : "";
+  let x = Ez.num("cx", 0), y = Ez.num("cy", 0);
+  let w = Ez.num("cw", imgW), h = Ez.num("ch", imgH);
+  const k = ratioVal();
+  if (k && id === "cw") h = w / k;
+  if (k && id === "ch") w = h * k;
+  w = clampN(Math.round(w), 1, imgW);
+  h = clampN(Math.round(h), 1, imgH);
+  x = clampN(Math.round(x), 0, imgW - w);
+  y = clampN(Math.round(y), 0, imgH - h);
+  editor.setBox(0, { x, y, w, h });
+  writeInputs({ x, y, w, h }, id);
+  Ez.refresh();
+}
+function centreRatio() {
+  const k = ratioVal();
+  if (!k) return;
+  let w = imgW, h = imgW / k;
+  if (h > imgH) { h = imgH; w = imgH * k; }
+  w = Math.round(w); h = Math.round(h);
+  const b = { x: Math.round((imgW - w) / 2), y: Math.round((imgH - h) / 2), w, h };
+  editor.setBox(0, b);
+  writeInputs(b);
+  Ez.refresh();
+}
+["cx", "cy", "cw", "ch"].forEach(id =>
+  document.getElementById(id).addEventListener("input", e => fromInputs(e)));
+ratioSel.addEventListener("change", centreRatio);
+document.getElementById("wholeBtn").addEventListener("click", () => {
+  ratioSel.value = "free";
+  editor.setBox(0, { x: 0, y: 0, w: imgW, h: imgH });
+  writeInputs({ x: 0, y: 0, w: imgW, h: imgH });
+  Ez.refresh();
+});
+
 Ez.register({
   onLoad(src, w, h) {
-    Ez.set("cx", 0);
-    Ez.set("cy", 0);
-    Ez.set("cw", w);
-    Ez.set("ch", h);
+    imgW = w; imgH = h;
+    const c = Ez.canvas(w, h);
+    c.getContext("2d").drawImage(src.frames[0].src, 0, 0, w, h);
+    cropImg.src = c.toDataURL("image/png");
+    cropPick.hidden = false;
+    editor.setSize(w, h);
+    editor.setBoxes([{ x: 0, y: 0, w, h }]);
+    writeInputs({ x: 0, y: 0, w, h });
   },
   process(src) {
     const [sw, sh] = Ez.size(src);
     const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-    let x = Ez.num("cx", 0);
-    let y = Ez.num("cy", 0);
-    let cw = Ez.num("cw", sw);
-    let ch = Ez.num("ch", sh);
-    const ratio = Ez.str("ratio", "free");
-    if (ratio !== "free") {
-      const [rw, rh] = ratio.split(":").map(Number);
-      if (sw / sh > rw / rh) {
-        ch = sh;
-        cw = sh * rw / rh;
-      } else {
-        cw = sw;
-        ch = sw * rh / rw;
-      }
-      cw = Math.round(cw);
-      ch = Math.round(ch);
-      x = Math.round((sw - cw) / 2);
-      y = Math.round((sh - ch) / 2);
-    }
-    cw = clamp(Math.round(cw), 1, sw);
-    ch = clamp(Math.round(ch), 1, sh);
-    x = clamp(Math.round(x), 0, sw - cw);
-    y = clamp(Math.round(y), 0, sh - ch);
+    const cw = clamp(Math.round(Ez.num("cw", sw)), 1, sw);
+    const ch = clamp(Math.round(Ez.num("ch", sh)), 1, sh);
+    const x = clamp(Math.round(Ez.num("cx", 0)), 0, sw - cw);
+    const y = clamp(Math.round(Ez.num("cy", 0)), 0, sh - ch);
     const frames = src.frames.map(f => {
       const c = Ez.canvas(cw, ch);
       c.getContext("2d").drawImage(f.src, -x, -y);
