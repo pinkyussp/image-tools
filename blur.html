@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blur and pixelate</title>
+<style>
+:root {
+  --bg: #f5f3f9;
+  --card: #ffffff;
+  --ink: #1f1b2e;
+  --muted: #6b6580;
+  --line: #e3dfee;
+  --accent: #6d5efc;
+  --ok: #1d7a46;
+  --ok-bg: #e5f4ec;
+  --bad: #b3322f;
+  --bad-bg: #fbe9e8;
+  --checker-a: #ffffff;
+  --checker-b: #ebe8f3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15141f;
+    --card: #1e1d2b;
+    --ink: #ecebf7;
+    --muted: #9b97b5;
+    --line: #33324a;
+    --accent: #8b7ffd;
+    --ok: #6fd39a;
+    --ok-bg: #18301f;
+    --bad: #f08a8a;
+    --bad-bg: #3a1f22;
+    --checker-a: #26253a;
+    --checker-b: #1b1a2a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15141f;
+  --card: #1e1d2b;
+  --ink: #ecebf7;
+  --muted: #9b97b5;
+  --line: #33324a;
+  --accent: #8b7ffd;
+  --ok: #6fd39a;
+  --ok-bg: #18301f;
+  --bad: #f08a8a;
+  --bad-bg: #3a1f22;
+  --checker-a: #26253a;
+  --checker-b: #1b1a2a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+p { margin: 0; }
+.sub { color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; }
+.back { color: var(--muted); font-size: 14px; text-decoration: none; }
+.back:hover { color: var(--ink); }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+.col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 120px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--bg); }
+.drop-title { font-weight: 600; }
+#fileInfo { overflow-wrap: anywhere; }
+
+fieldset { border: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; min-width: 0; }
+legend { font-size: 13px; color: var(--muted); padding: 0; margin-bottom: 6px; }
+label.opt { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); min-width: 0; }
+select, .field input[type="number"], .field input[type="text"], .field input[type="color"] {
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 100%;
+  min-width: 0;
+}
+.field input[type="color"] { height: 42px; padding: 4px; }
+select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+
+.preview {
+  align-self: center;
+  width: 260px;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background-color: var(--checker-a);
+  background-image:
+    linear-gradient(45deg, var(--checker-b) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--checker-b) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--checker-b) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--checker-b) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.preview img { max-width: 100%; max-height: 100%; display: block; }
+
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.frames figure { margin: 0; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.frames img {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--checker-a);
+  background-image: linear-gradient(45deg, var(--checker-b) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-b) 25%, transparent 25%);
+  background-size: 16px 16px;
+}
+.frames figcaption { font-size: 12px; color: var(--muted); }
+
+.checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checks li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.tag {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 2px 9px;
+  min-width: 46px;
+  text-align: center;
+}
+.tag.ok { color: var(--ok); background: var(--ok-bg); }
+.tag.bad { color: var(--bad); background: var(--bad-bg); }
+
+.status { font-size: 14px; color: var(--muted); }
+.error { color: var(--bad); font-size: 14px; }
+
+.tiles { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 480px) { .tiles { grid-template-columns: 1fr 1fr; } }
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.tile:hover { border-color: var(--accent); }
+.tile strong { font-size: 16px; }
+.tile span { font-size: 13px; color: var(--muted); }
+
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+
+      /* ---- added: save + reset ---- */
+      .save-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .tool-save { font: inherit; font-size: 16px; font-weight: 600; min-width: 160px; border: none; border-radius: 12px; padding: 12px 24px; background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer; }
+      .tool-save:hover { filter: brightness(1.08); }
+      .tool-save:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+      .tool-reset { font: inherit; font-size: 14px; color: var(--accent); background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+      .tool-reset:hover { border-color: var(--accent); }
+      .opts-foot { display: flex; justify-content: flex-end; }
+      .tool-mini { font-size: 12px; font-weight: 600; color: var(--accent); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; }
+      .tool-mini:hover { border-color: var(--accent); }
+
+      /* ---- site-wide usability pass ---- */
+      html { -webkit-text-size-adjust: 100%; }
+      input, select, textarea { font-size: 16px; }
+      select, .field input[type="number"], .field input[type="text"], .field input[type="color"] {
+        min-height: 44px;
+      }
+      .field { color: var(--ink); font-size: 14px; font-weight: 600; }
+      .field input[type="color"] { min-height: 44px; }
+      .note { line-height: 1.45; }
+      .card {
+        box-shadow: 0 1px 2px rgba(31, 27, 46, 0.04), 0 8px 24px rgba(31, 27, 46, 0.05);
+      }
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .back:hover { color: var(--ink); }
+      .drop {
+        min-height: 150px;
+        border-width: 2px;
+        background: var(--card);
+      }
+      .drop::before {
+        content: "+";
+        display: grid;
+        place-items: center;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: var(--accent-ink, #fff);
+        font-size: 30px;
+        font-weight: 400;
+        line-height: 1;
+        margin-bottom: 6px;
+        box-shadow: 0 6px 16px rgba(109, 94, 252, 0.28);
+      }
+      .drop:hover, .drop:focus-within, .drop.over {
+        border-color: var(--accent);
+        background: var(--bg);
+      }
+      .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .drop-title { font-size: 16px; }
+      .tool-save, .tool-reset, .tool-mini, .tool-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tool-save { box-shadow: 0 6px 18px rgba(109, 94, 252, 0.25); }
+      .tool-mini { min-height: 32px; }
+      .tool-save:disabled { box-shadow: none; }
+      .status { min-height: 1.5em; font-weight: 500; }
+      .error { font-weight: 600; }
+      .preview { min-height: 200px; }
+      .checks li { align-items: flex-start; }
+      .tag { margin-top: 1px; }
+      main { padding-bottom: 24px; }
+      @media (max-width: 480px) {
+        h1 { font-size: 24px; }
+        .row2 { grid-template-columns: 1fr; }
+        .card { padding: 16px; }
+        .preview { width: 100%; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .drop, .tool-save { transition: none !important; }
+      }
+    
+      /* ---- settings panel pass ---- */
+      .settings { gap: 0; }
+      .settings-tip {
+        font-size: 13px;
+        color: var(--muted);
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+      }
+      .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px 0;
+        border-top: 1px solid var(--line);
+      }
+      .settings-group:first-of-type { border-top: none; padding-top: 4px; }
+      .settings-group h3 {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .settings .hint {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 400;
+        color: var(--muted);
+        line-height: 1.4;
+        margin-top: -2px;
+      }
+      .settings .opt { font-weight: 600; font-size: 15px; color: var(--ink); min-height: 44px; }
+      .settings .opt input { width: 20px; height: 20px; }
+      .settings .field + .hint { margin-top: 0; }
+    
+      /* ---- region picker ---- */
+      .stage { position: relative; touch-action: none; user-select: none; -webkit-user-select: none; border-radius: 10px; overflow: hidden; background: var(--checker-a); }
+      .stage img { display: block; width: 100%; height: auto; pointer-events: none; }
+      .rbox { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); background: rgba(109, 94, 252, 0.14); cursor: move; touch-action: none; }
+      .rbox.dim { background: transparent; box-shadow: 0 0 0 9999px rgba(15, 12, 30, 0.55); }
+      .rbox.sel { border-color: #fff; }
+      .rbox.dim.sel { box-shadow: 0 0 0 9999px rgba(15, 12, 30, 0.55), 0 0 0 2px var(--accent); }
+      .rh { position: absolute; width: 22px; height: 22px; background: #fff; border: 2px solid var(--accent); border-radius: 50%; box-sizing: border-box; transform: translate(-50%, -50%); }
+      .rh-nw { left: 0; top: 0; transform: translate(0, 0); cursor: nwse-resize; }
+      .rh-n { left: 50%; top: 0; transform: translate(-50%, 0); cursor: ns-resize; }
+      .rh-ne { left: 100%; top: 0; transform: translate(-100%, 0); cursor: nesw-resize; }
+      .rh-e { left: 100%; top: 50%; transform: translate(-100%, -50%); cursor: ew-resize; }
+      .rh-se { left: 100%; top: 100%; transform: translate(-100%, -100%); cursor: nwse-resize; }
+      .rh-s { left: 50%; top: 100%; transform: translate(-50%, -100%); cursor: ns-resize; }
+      .rh-sw { left: 0; top: 100%; transform: translate(0, -100%); cursor: nesw-resize; }
+      .rh-w { left: 0; top: 50%; transform: translate(0, -50%); cursor: ew-resize; }
+      .pick-head { display: flex; flex-direction: column; gap: 4px; }
+      .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    </style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">← All tools</a>
+  <header>
+    <h1>Blur or pixelate</h1>
+    <p class="sub">Hide faces, names or numbers. Pick one or more areas, then pixelate or blur them.</p>
+  </header>
+
+  <section class="card">
+    <label class="drop" id="drop">
+      <input id="file" type="file" accept="image/*" multiple hidden>
+      <span class="drop-title">Choose a GIF, PNG, JPEG or WebP</span>
+      <span class="note">or drop one here</span>
+    </label>
+    <p class="note" id="fileInfo"></p>
+    <p class="error" id="error" role="alert" hidden></p>
+  </section>
+
+  <section class="card col" id="pickCard" hidden>
+    <div class="pick-head">
+      <strong>Choose the areas</strong>
+      <p class="note">Drag an area to move it, or drag a dot to resize it. Tap an area to select it.</p>
+    </div>
+    <div class="stage" id="stage"><img id="srcImg" alt="Your picture"></div>
+    <div class="row-btns">
+      <button type="button" class="tool-reset" id="addBtn">Add area</button>
+      <button type="button" class="tool-reset" id="wholeBtn">Whole picture</button>
+      <button type="button" class="tool-reset" id="removeBtn">Remove selected</button>
+    </div>
+    <p class="note" id="areaInfo"></p>
+  </section>
+  <section class="card col settings" id="opts">
+        <p class="settings-tip">Changes update the result automatically.</p>
+        <div class="settings-group">
+          <h3>Effect</h3>
+          <label class="field">Effect
+            <select id="effect">
+              <option value="pixel" selected>Pixelate (blocky)</option>
+              <option value="blur">Blur (soft)</option>
+            </select>
+            <span class="hint">Pixelate hides detail completely. Blur keeps the shape softer.</span>
+          </label>
+          <label class="field">Strength
+            <input id="strength" type="range" min="2" max="60" value="20">
+            <span class="hint">Higher is stronger.</span>
+          </label>
+        </div>
+        <div class="settings-group">
+          <h3>File type</h3>
+          <label class="field">Output type
+            <select id="format"><option value="auto" selected>Same as the picture (GIF if animated)</option><option value="gif">GIF (animated)</option><option value="png">PNG (keeps transparency)</option><option value="jpeg">JPEG (smallest for photos)</option><option value="webp">WebP</option><option value="split">Each frame as its own image</option></select>
+            <span class="hint">Same as the picture keeps the type you started with. PNG keeps see-through areas. JPEG is smallest for photos.</span>
+          </label>
+        </div>
+        <div class="settings-group">
+          <h3>Keep it small</h3>
+          <label class="field">Colours (GIF only)
+            <select id="colors">
+              <option value="256" selected>256 (best quality)</option>
+              <option value="128">128</option>
+              <option value="64">64</option>
+              <option value="32">32</option>
+              <option value="16">16 (smallest)</option>
+            </select>
+            <span class="hint">Fewer colours give a smaller GIF. 256 looks best.</span>
+          </label><label class="field">Largest file size (KB, optional)
+            <input id="maxkb" type="number" min="1" placeholder="No limit">
+            <span class="hint">The tool lowers quality or colours until the file fits.</span>
+          </label>
+        </div>
+      </section>
+
+  <section class="card" id="result" hidden>
+    <div class="preview"><img id="preview" alt="Result preview"></div>
+    <div id="frames" class="frames" hidden></div>
+    <div class="save-row" id="saveRow" hidden>
+      <button type="button" class="tool-save" id="saveBtn">Save</button>
+      <span class="note">Saves this picture to your device</span>
+    </div>
+
+    <ul class="checks" id="checks"></ul>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+  </section>
+</main>
+<script>
+const Ez = (() => {
+  const $ = id => document.getElementById(id);
+  const kb = n => (n / 1024).toFixed(0) + " KB";
+  const NAMES = { gif: "GIF", png: "PNG", jpeg: "JPEG", webp: "WebP" };
+  const TYPES = { png: "image/png", jpeg: "image/jpeg", webp: "image/webp" };
+
+  let source = null;
+  let tool = null;
+  let runId = 0;
+  let timer = 0;
+  let previewUrl = null;
+  let frameUrls = [];
+
+  const num = (id, d) => {
+    const v = parseFloat($(id) && $(id).value);
+    return Number.isFinite(v) ? v : d;
+  };
+  const str = (id, d = "") => ($(id) ? $(id).value : d);
+  const chk = id => !!($(id) && $(id).checked);
+  const set = (id, v) => { if ($(id)) $(id).value = v; };
+  const canvas = (w, h) => {
+    const c = document.createElement("canvas");
+    c.width = Math.max(1, Math.round(w));
+    c.height = Math.max(1, Math.round(h));
+    return c;
+  };
+  const size = src => {
+    const f = src.frames[0].src;
+    return [f.naturalWidth || f.width, f.naturalHeight || f.height];
+  };
+
+  function drawFit(img, w, h, mode, fill) {
+    const c = canvas(w, h);
+    const x = c.getContext("2d");
+    if (fill) { x.fillStyle = fill; x.fillRect(0, 0, c.width, c.height); }
+    x.imageSmoothingQuality = "high";
+    const sw = img.naturalWidth || img.width;
+    const sh = img.naturalHeight || img.height;
+    const s = mode === "crop" ? Math.max(c.width / sw, c.height / sh) : Math.min(c.width / sw, c.height / sh);
+    const dw = sw * s;
+    const dh = sh * s;
+    x.drawImage(img, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh);
+    return c;
+  }
+
+  function full(src) {
+    const [w, h] = size(src);
+    return src.frames.map(f => ({ canvas: drawFit(f.src, w, h, "fit", null), ms: f.ms }));
+  }
+
+  function flatten(c, color) {
+    const o = canvas(c.width, c.height);
+    const x = o.getContext("2d");
+    x.fillStyle = color;
+    x.fillRect(0, 0, o.width, o.height);
+    x.drawImage(c, 0, 0);
+    return o;
+  }
+
+  function row(ok, text) {
+    const li = document.createElement("li");
+    const tag = document.createElement("span");
+    tag.className = "tag " + (ok ? "ok" : "bad");
+    tag.textContent = ok ? "OK" : "Fix";
+    const label = document.createElement("span");
+    label.textContent = text;
+    li.append(tag, label);
+    return li;
+  }
+
+  const setStatus = t => { $("status").textContent = t || ""; };
+  const showError = t => { $("error").textContent = t || ""; $("error").hidden = !t; };
+  const showChecks = list => $("checks").replaceChildren(...list);
+  const toBlob = (c, type, q) => new Promise(resolve => c.toBlob(resolve, type, q));
+
+  function guessType(name) {
+    if (/\.gif$/i.test(name)) return "image/gif";
+    if (/\.png$/i.test(name)) return "image/png";
+    if (/\.webp$/i.test(name)) return "image/webp";
+    return "image/jpeg";
+  }
+
+  function loadImg(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+  }
+
+  async function decodeFile(file) {
+    const buf = await file.arrayBuffer();
+    const type = file.type || guessType(file.name);
+    if (window.ImageDecoder && type !== "image/jpeg") {
+      try {
+        const dec = new ImageDecoder({ data: buf, type });
+        await dec.tracks.ready;
+        const count = dec.tracks.selectedTrack.frameCount;
+        const frames = [];
+        for (let i = 0; i < count; i++) {
+          const { image } = await dec.decode({ frameIndex: i });
+          const src = await createImageBitmap(image);
+          const ms = image.duration ? image.duration / 1000 : 100;
+          frames.push({ src, ms: Math.max(20, ms) });
+          image.close();
+        }
+        dec.close();
+        return { frames, animated: count > 1 };
+      } catch (e) {
+      }
+    }
+    const img = await loadImg(URL.createObjectURL(new Blob([buf], { type })));
+    return { frames: [{ src: img, ms: 100 }], animated: false };
+  }
+
+  async function loadFiles(files) {
+    if (files.length === 1) {
+      const d = await decodeFile(files[0]);
+      return { frames: d.frames, animated: d.animated, multi: false };
+    }
+    const frames = [];
+    for (const f of files) {
+      const d = await decodeFile(f);
+      frames.push({ src: d.frames[0].src, ms: 100 });
+    }
+    return { frames, animated: frames.length > 1, multi: true };
+  }
+
+  function pixelsOf(c) {
+    return c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+  }
+
+  function palette(sets, maxColors) {
+    const count = new Uint32Array(32768);
+    const sr = new Float64Array(32768);
+    const sg = new Float64Array(32768);
+    const sb = new Float64Array(32768);
+    for (const px of sets) {
+      for (let p = 0; p < px.length; p += 4) {
+        if (px[p + 3] < 128) continue;
+        const r = px[p], g = px[p + 1], b = px[p + 2];
+        const k = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        count[k]++;
+        sr[k] += r; sg[k] += g; sb[k] += b;
+      }
+    }
+    const keys = [];
+    for (let k = 0; k < 32768; k++) if (count[k]) keys.push(k);
+    keys.sort((a, b) => count[b] - count[a]);
+    return keys.slice(0, Math.max(1, Math.min(255, maxColors - 1)))
+      .map(k => [sr[k] / count[k], sg[k] / count[k], sb[k] / count[k]]);
+  }
+
+  function mapper(colors) {
+    const lut = new Int16Array(32768).fill(-1);
+    return (r, g, b, a) => {
+      if (a < 128) return 0;
+      const k = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+      if (lut[k] < 0) {
+        const cr = ((k >> 10) << 3) + 4;
+        const cg = (((k >> 5) & 31) << 3) + 4;
+        const cb = ((k & 31) << 3) + 4;
+        let best = 1;
+        let bestD = Infinity;
+        for (let i = 0; i < colors.length; i++) {
+          const dr = colors[i][0] - cr, dg = colors[i][1] - cg, db = colors[i][2] - cb;
+          const d = dr * dr + dg * dg + db * db;
+          if (d < bestD) { bestD = d; best = i + 1; }
+        }
+        lut[k] = best;
+      }
+      return lut[k];
+    };
+  }
+
+  class BitWriter {
+    constructor() { this.bytes = []; this.acc = 0; this.n = 0; }
+    put(code, size) {
+      this.acc |= code << this.n;
+      this.n += size;
+      while (this.n >= 8) {
+        this.bytes.push(this.acc & 255);
+        this.acc >>>= 8;
+        this.n -= 8;
+      }
+    }
+    flush() {
+      if (this.n > 0) this.bytes.push(this.acc & 255);
+      this.acc = 0;
+      this.n = 0;
+    }
+  }
+
+  function lzw(data, minCode) {
+    const clear = 1 << minCode;
+    const eoi = clear + 1;
+    let nBits = minCode + 1;
+    let maxCode = (1 << nBits) - 1;
+    let free = eoi + 1;
+    const dict = new Map();
+    const bw = new BitWriter();
+    bw.put(clear, nBits);
+    let cur = data[0];
+    for (let i = 1; i < data.length; i++) {
+      const c = data[i];
+      const key = cur * 256 + c;
+      const got = dict.get(key);
+      if (got !== undefined) { cur = got; continue; }
+      bw.put(cur, nBits);
+      if (free < 4096) {
+        dict.set(key, free++);
+      } else {
+        bw.put(clear, nBits);
+        dict.clear();
+        nBits = minCode + 1;
+        maxCode = (1 << nBits) - 1;
+        free = eoi + 1;
+      }
+      if (free > maxCode + 1 && nBits < 12) {
+        nBits++;
+        maxCode = (1 << nBits) - 1;
+      }
+      cur = c;
+    }
+    bw.put(cur, nBits);
+    bw.put(eoi, nBits);
+    bw.flush();
+    return bw.bytes;
+  }
+
+  function subBlocks(out, bytes) {
+    for (let i = 0; i < bytes.length; i += 255) {
+      const n = Math.min(255, bytes.length - i);
+      out.push(n);
+      for (let j = 0; j < n; j++) out.push(bytes[i + j]);
+    }
+    out.push(0);
+  }
+
+  function encodeGif(frames, maxColors) {
+    const w = frames[0].canvas.width;
+    const h = frames[0].canvas.height;
+    const step = Math.max(1, Math.ceil(frames.length / 12));
+    const sample = [];
+    for (let i = 0; i < frames.length; i += step) sample.push(pixelsOf(frames[i].canvas));
+    const colors = palette(sample, maxColors);
+    const map = mapper(colors);
+    const le16 = v => [v & 255, (v >> 8) & 255];
+    const out = [];
+    const text = s => { for (const ch of s) out.push(ch.charCodeAt(0)); };
+
+    text("GIF89a");
+    out.push(...le16(w), ...le16(h), 0xf7, 0, 0);
+    const gct = new Uint8Array(768);
+    colors.forEach(([r, g, b], i) => {
+      gct[(i + 1) * 3] = Math.round(r);
+      gct[(i + 1) * 3 + 1] = Math.round(g);
+      gct[(i + 1) * 3 + 2] = Math.round(b);
+    });
+    out.push(...gct);
+    out.push(0x21, 0xff, 0x0b);
+    text("NETSCAPE2.0");
+    out.push(3, 1, 0, 0, 0);
+
+    for (const f of frames) {
+      const px = pixelsOf(f.canvas);
+      const idx = new Uint8Array(w * h);
+      for (let i = 0, p = 0; i < idx.length; i++, p += 4) {
+        idx[i] = map(px[p], px[p + 1], px[p + 2], px[p + 3]);
+      }
+      const cs = Math.max(2, Math.round(f.ms / 10));
+      out.push(0x21, 0xf9, 4, 0x05, ...le16(cs), 0, 0);
+      out.push(0x2c, 0, 0, 0, 0, ...le16(w), ...le16(h), 0);
+      out.push(8);
+      subBlocks(out, lzw(idx, 8));
+    }
+    out.push(0x3b);
+    return new Blob([new Uint8Array(out)], { type: "image/gif" });
+  }
+
+  function showPreview(blob, checks, msg) {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(blob);
+    $("preview").src = previewUrl;
+    $("preview").hidden = false;
+    $("frames").hidden = true;
+    showChecks(checks);
+    setStatus(msg);
+  }
+
+  async function showFrames(frames, my) {
+    frameUrls.forEach(u => URL.revokeObjectURL(u));
+    frameUrls = [];
+    const box = $("frames");
+    box.replaceChildren();
+    for (let i = 0; i < frames.length; i++) {
+      const blob = await toBlob(frames[i].canvas, "image/png");
+      if (my !== runId) return false;
+      const url = URL.createObjectURL(blob);
+      frameUrls.push(url);
+      const fig = document.createElement("figure");
+      const img = new Image();
+      img.src = url;
+      img.alt = `Frame ${i + 1}`;
+      const cap = document.createElement("figcaption");
+      cap.textContent = `Frame ${i + 1}`;
+      fig.append(img, cap);
+      box.append(fig);
+    }
+    box.hidden = false;
+    $("preview").hidden = true;
+    return true;
+  }
+
+  async function run() {
+    if (!source || !tool) return;
+    const my = ++runId;
+    $("result").hidden = false;
+    setStatus("Working…");
+
+    let res;
+    try {
+      res = await tool.process(source);
+    } catch (e) {
+      console.error(e);
+      if (my === runId) setStatus("Something went wrong with this file. Try another one.");
+      return;
+    }
+    if (my !== runId) return;
+
+    const frames = res.frames;
+    const checks = [row(true, `${frames[0].canvas.width} × ${frames[0].canvas.height} px`)];
+    (res.checks || []).forEach(c => checks.push(row(c[0], c[1])));
+    if (frames.length > 1) checks.push(row(true, `${frames.length} frames`));
+
+    const want = str("format", "auto");
+    if (want === "split") {
+      const ok = await showFrames(frames, my);
+      if (!ok || my !== runId) return;
+      showChecks(checks);
+      setStatus("Use Save under any frame to keep it.");
+      return;
+    }
+
+    const maxKB = num("maxkb", 0);
+    const limit = maxKB * 1024;
+    const fmt = want === "auto" ? (frames.length > 1 ? "gif" : "png") : want;
+    let blob;
+
+    if (fmt === "gif") {
+      let colors = num("colors", 256);
+      blob = encodeGif(frames, colors);
+      if (maxKB) {
+        for (const k of [128, 64, 32, 16]) {
+          if (blob.size <= limit) break;
+          if (k >= colors) continue;
+          blob = encodeGif(frames, k);
+          colors = k;
+          if (my !== runId) return;
+        }
+      }
+      checks.push(row(true, `Up to ${colors} colours`));
+    } else {
+      if (frames.length > 1) checks.push(row(true, "This format has no animation, so the first frame is saved"));
+      const c = fmt === "jpeg" ? flatten(frames[0].canvas, "#ffffff") : frames[0].canvas;
+      blob = await toBlob(c, TYPES[fmt], 0.92);
+      if (my !== runId) return;
+      if (maxKB && blob.size > limit && fmt !== "png") {
+        let lo = 0.05, hi = 0.92, best = null;
+        for (let i = 0; i < 8; i++) {
+          const mid = (lo + hi) / 2;
+          const b = await toBlob(c, TYPES[fmt], mid);
+          if (my !== runId) return;
+          if (b.size <= limit) { best = b; lo = mid; } else { hi = mid; }
+        }
+        if (best) {
+          blob = best;
+          checks.push(row(true, "Quality lowered to fit the size limit"));
+        }
+      }
+    }
+    if (my !== runId) return;
+
+    const sizeOk = !maxKB || blob.size <= limit;
+    checks.push(row(sizeOk, `${NAMES[fmt]} · ${kb(blob.size)}${maxKB ? ` (limit ${maxKB} KB)` : ""}`));
+    showPreview(blob, checks, sizeOk ? "" : "Still over the size limit. Try a smaller size or a different format.");
+  }
+
+  function schedule() {
+    clearTimeout(timer);
+    timer = setTimeout(run, 150);
+  }
+
+  async function handleFiles(list) {
+    const files = [...list].filter(f => /^image\//.test(f.type) || /\.(gif|png|jpe?g|webp)$/i.test(f.name));
+    if (!files.length) return showError("Pick a GIF, PNG, JPEG or WebP image.");
+    showError("");
+    setStatus("Reading files…");
+    $("result").hidden = false;
+    try {
+      source = await loadFiles(files);
+    } catch (e) {
+      source = null;
+      $("result").hidden = true;
+      return showError("Couldn't read that file.");
+    }
+    fileInfo.textContent = files.length > 1
+      ? `${files.length} images, shown in the order you picked them`
+      : `${files[0].name} · ${kb(files[0].size)}` + (source.animated ? ` · ${source.frames.length} frames` : " · still image");
+    if (tool && tool.onLoad) {
+      const [w, h] = size(source);
+      tool.onLoad(source, w, h);
+    }
+    await run();
+  }
+
+  const fileInfo = $("fileInfo");
+  const drop = $("drop");
+  $("file").addEventListener("change", e => handleFiles(e.target.files));
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => {
+    e.preventDefault();
+    drop.classList.add("over");
+  }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => {
+    e.preventDefault();
+    drop.classList.remove("over");
+  }));
+  drop.addEventListener("drop", e => handleFiles(e.dataTransfer.files));
+  $("opts").addEventListener("input", schedule);
+  $("opts").addEventListener("change", schedule);
+
+  return {
+    register: t => { tool = t; },
+    $, num, str, chk, set, canvas, size, drawFit, full, encodeGif,
+    source: () => source,
+    refresh: schedule
+  };
+})();
+
+</script>
+<script>
+
+const RegionEditor = (() => {
+  const MIN = 4;
+  const HANDLES = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  function create(cfg) {
+    const { stage, img, dim = false, ratio = () => 0, onChange = () => {}, onSelect = () => {} } = cfg;
+    let sw = 1, sh = 1, boxes = [], els = [], sel = -1, drag = null;
+
+    function style(i) {
+      const b = boxes[i], el = els[i];
+      if (!b || !el) return;
+      el.style.left = (b.x / sw * 100) + "%";
+      el.style.top = (b.y / sh * 100) + "%";
+      el.style.width = (b.w / sw * 100) + "%";
+      el.style.height = (b.h / sh * 100) + "%";
+      el.classList.toggle("sel", i === sel);
+    }
+    function render() {
+      els.forEach(el => el.remove());
+      els = boxes.map((_, i) => {
+        const el = document.createElement("div");
+        el.className = "rbox" + (dim ? " dim" : "");
+        el.dataset.i = i;
+        HANDLES.forEach(h => {
+          const d = document.createElement("span");
+          d.className = "rh rh-" + h;
+          d.dataset.h = h;
+          el.append(d);
+        });
+        stage.append(el);
+        return el;
+      });
+      els.forEach((_, i) => style(i));
+    }
+    function select(i) {
+      sel = i;
+      els.forEach((_, j) => style(j));
+      onSelect(i);
+    }
+
+    stage.addEventListener("pointerdown", e => {
+      const el = e.target.closest(".rbox");
+      if (!el) return;
+      e.preventDefault();
+      const i = +el.dataset.i;
+      select(i);
+      const r = img.getBoundingClientRect();
+      drag = { i, mode: e.target.dataset.h || "move", sx: e.clientX, sy: e.clientY, s: { ...boxes[i] }, k: sw / r.width };
+      el.setPointerCapture(e.pointerId);
+    });
+
+    stage.addEventListener("pointermove", e => {
+      if (!drag) return;
+      const { i, mode, s, k } = drag;
+      const dx = (e.clientX - drag.sx) * k, dy = (e.clientY - drag.sy) * k;
+      let l = s.x, t = s.y, r = s.x + s.w, b = s.y + s.h;
+      if (mode === "move") {
+        l = clamp(s.x + dx, 0, sw - s.w);
+        t = clamp(s.y + dy, 0, sh - s.h);
+        r = l + s.w;
+        b = t + s.h;
+      } else {
+        if (mode.includes("w")) l = clamp(s.x + dx, 0, r - MIN);
+        if (mode.includes("e")) r = clamp(s.x + s.w + dx, l + MIN, sw);
+        if (mode.includes("n")) t = clamp(s.y + dy, 0, b - MIN);
+        if (mode.includes("s")) b = clamp(s.y + s.h + dy, t + MIN, sh);
+        const kr = ratio();
+        if (kr) {
+          let w = r - l, h = b - t;
+          if (mode === "n" || mode === "s") w = h * kr; else h = w / kr;
+          if (w > sw) { w = sw; h = w / kr; }
+          if (h > sh) { h = sh; w = h * kr; }
+          const hasW = mode.includes("w"), hasE = mode.includes("e");
+          const hasN = mode.includes("n"), hasS = mode.includes("s");
+          let L = hasW ? r - w : (hasE ? l : s.x + s.w / 2 - w / 2);
+          let T = hasN ? b - h : (hasS ? t : s.y + s.h / 2 - h / 2);
+          L = clamp(L, 0, sw - w);
+          T = clamp(T, 0, sh - h);
+          l = L; t = T; r = L + w; b = T + h;
+        }
+      }
+      boxes[i] = { x: Math.round(l), y: Math.round(t), w: Math.max(1, Math.round(r - l)), h: Math.max(1, Math.round(b - t)) };
+      style(i);
+      onChange(i);
+    });
+    const end = () => { drag = null; };
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
+
+    return {
+      setSize(w, h) { sw = w; sh = h; els.forEach((_, i) => style(i)); },
+      setBoxes(list) {
+        boxes = list.map(b => ({ ...b }));
+        sel = boxes.length ? 0 : -1;
+        render();
+        onSelect(sel);
+      },
+      setBox(i, b) { boxes[i] = { ...b }; style(i); },
+      boxes: () => boxes.map(b => ({ ...b })),
+      selected: () => sel,
+      add() {
+        const w = Math.round(sw * 0.4), h = Math.round(sh * 0.4);
+        boxes.push({ x: Math.round((sw - w) / 2), y: Math.round((sh - h) / 2), w, h });
+        render();
+        select(boxes.length - 1);
+        onChange(boxes.length - 1);
+      },
+      removeSelected() {
+        if (sel < 0) return;
+        boxes.splice(sel, 1);
+        sel = boxes.length ? Math.min(sel, boxes.length - 1) : -1;
+        render();
+        onSelect(sel);
+        onChange(-1);
+      },
+    };
+  }
+  return { create };
+})();
+
+const blurStage = document.getElementById("stage");
+const blurImg = document.getElementById("srcImg");
+const blurPick = document.getElementById("pickCard");
+const areaInfo = document.getElementById("areaInfo");
+let blurW = 1, blurH = 1;
+function showInfo() {
+  const i = editor.selected();
+  const list = editor.boxes();
+  if (!list.length) { areaInfo.textContent = "No areas yet. Add one, or choose Whole picture."; return; }
+  if (i < 0) { areaInfo.textContent = `${list.length} area(s). Tap an area to select it.`; return; }
+  const b = list[i];
+  areaInfo.textContent = `Area ${i + 1}: ${b.w} × ${b.h} px, starting ${b.x}, ${b.y}`;
+}
+const editor = RegionEditor.create({
+  stage: blurStage,
+  img: blurImg,
+  dim: false,
+  onChange: () => { showInfo(); Ez.refresh(); },
+  onSelect: () => showInfo(),
+});
+document.getElementById("addBtn").addEventListener("click", () => editor.add());
+document.getElementById("removeBtn").addEventListener("click", () => editor.removeSelected());
+document.getElementById("wholeBtn").addEventListener("click", () => {
+  editor.setBoxes([{ x: 0, y: 0, w: blurW, h: blurH }]);
+  Ez.refresh();
+});
+
+function applyEffect(ctx, a, mode, strength) {
+  const { x, y, w, h } = a;
+  if (w < 1 || h < 1) return;
+  const pixel = mode === "pixel";
+  const f = pixel ? Math.max(2, Math.round(strength / 2)) : Math.max(2, Math.round(strength / 3));
+  const tw = Math.max(1, Math.round(w / f)), th = Math.max(1, Math.round(h / f));
+  const tmp = Ez.canvas(tw, th);
+  const t = tmp.getContext("2d");
+  t.imageSmoothingEnabled = !pixel;
+  t.imageSmoothingQuality = "high";
+  t.drawImage(ctx.canvas, x, y, w, h, 0, 0, tw, th);
+  ctx.save();
+  ctx.imageSmoothingEnabled = !pixel;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(tmp, 0, 0, tw, th, x, y, w, h);
+  ctx.restore();
+}
+
+Ez.register({
+  onLoad(src, w, h) {
+    blurW = w; blurH = h;
+    const c = Ez.canvas(w, h);
+    c.getContext("2d").drawImage(src.frames[0].src, 0, 0, w, h);
+    blurImg.src = c.toDataURL("image/png");
+    blurPick.hidden = false;
+    editor.setSize(w, h);
+    editor.setBoxes([{ x: Math.round(w * 0.3), y: Math.round(h * 0.3), w: Math.round(w * 0.4), h: Math.round(h * 0.4) }]);
+    showInfo();
+  },
+  process(src) {
+    const [sw, sh] = Ez.size(src);
+    const mode = Ez.str("effect", "pixel");
+    const strength = Ez.num("strength", 20);
+    const areas = editor.boxes();
+    const frames = src.frames.map(f => {
+      const c = Ez.canvas(sw, sh);
+      const x = c.getContext("2d");
+      x.drawImage(f.src, 0, 0, sw, sh);
+      for (const a of areas) applyEffect(x, a, mode, strength);
+      return { canvas: c, ms: f.ms };
+    });
+    const what = mode === "pixel" ? "pixelated" : "blurred";
+    return { frames, checks: [[areas.length > 0, `${areas.length} area(s) ${what}`]] };
+  }
+});
+
+</script>
+<script>
+(() => {
+  const SLUG = "blur";
+  const $ = id => document.getElementById(id);
+  const EXT = { "image/gif": "gif", "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+
+  const baseName = () => {
+    const first = ($("fileInfo").textContent || "").split(" · ")[0].trim();
+    const m = first.match(/^(.+)\.(gif|png|jpe?g|webp)$/i);
+    const name = m ? m[1].replace(/[^\w .-]+/g, "").trim() : "";
+    return name || "image";
+  };
+
+  const saveAs = (url, name) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const preview = $("preview");
+  const saveRow = $("saveRow");
+  const saveBtn = $("saveBtn");
+  let lastBlob = null;
+  let lastSrc = "";
+
+  async function sync() {
+    const showMain = !!preview.src && !preview.hidden;
+    if (saveRow.hidden === showMain) saveRow.hidden = !showMain;
+    if (showMain && preview.src !== lastSrc) {
+      const s = preview.src;
+      lastSrc = s;
+      const b = await fetch(s).then(r => r.blob()).catch(() => null);
+      if (s === lastSrc) lastBlob = b;
+    }
+    $("frames").querySelectorAll("figure").forEach((fig, i) => {
+      if (fig.querySelector(".tool-mini")) return;
+      const img = fig.querySelector("img");
+      if (!img) return;
+      const a = document.createElement("a");
+      a.className = "tool-mini";
+      a.textContent = "Save";
+      a.href = img.src;
+      a.download = `${baseName()}-${SLUG}-frame${i + 1}.png`;
+      fig.append(a);
+    });
+  }
+  new MutationObserver(() => sync()).observe($("result"), {
+    subtree: true, childList: true, attributes: true, attributeFilter: ["src", "hidden"]
+  });
+
+  saveBtn.addEventListener("click", () => {
+    if (!lastBlob) return;
+    const url = URL.createObjectURL(lastBlob);
+    saveAs(url, `${baseName()}-${SLUG}.${EXT[lastBlob.type] || "png"}`);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+
+  const opts = $("opts");
+  const fields = [...opts.querySelectorAll("input, select")];
+  let base = fields.map(el => ({
+    el,
+    value: el.tagName === "SELECT" ? ([...el.options].find(o => o.defaultSelected) || el.options[0]).value : el.defaultValue,
+    checked: el.defaultChecked
+  }));
+  let snapped = false;
+  new MutationObserver((_, obs) => {
+    if (snapped || !$("fileInfo").textContent) return;
+    snapped = true;
+    obs.disconnect();
+    base = fields.map(el => ({ el, value: el.value, checked: el.checked }));
+  }).observe($("fileInfo"), { childList: true, characterData: true, subtree: true });
+
+  const foot = document.createElement("div");
+  foot.className = "opts-foot";
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "tool-reset";
+  resetBtn.textContent = "Reset options";
+  foot.append(resetBtn);
+  opts.append(foot);
+  resetBtn.addEventListener("click", () => {
+    for (const s of base) {
+      const el = s.el;
+      if (el.type === "checkbox" || el.type === "radio") {
+        if (el.checked === s.checked) continue;
+        el.checked = s.checked;
+      } else {
+        if (el.value === s.value) continue;
+        el.value = s.value;
+      }
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+})();
+</script>
+</body>
+</html>
