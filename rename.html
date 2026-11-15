@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Rename files</title>
+    <style>
+      :root { --bg: #f5f3f9; --card: #ffffff; --ink: #1f1b2e; --muted: #6b6580; --line: #e3dfee; --accent: #6d5efc; --accent-ink: #ffffff; --accent-soft: #ece9ff; --bad: #b3322f; --bad-bg: #fbe9e8; --ok: #1d7a46; --ok-bg: #e5f4ec; }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme="light"]) { --bg: #15141f; --card: #1e1d2b; --ink: #ecebf7; --muted: #9b97b5; --line: #33324a; --accent: #8b7ffd; --accent-ink: #15141f; --accent-soft: #272445; --bad: #f08a8a; --bad-bg: #3a1f22; --ok: #6fd39a; --ok-bg: #18301f; color-scheme: dark; }
+      }
+      :root[data-theme="dark"] { --bg: #15141f; --card: #1e1d2b; --ink: #ecebf7; --muted: #9b97b5; --line: #33324a; --accent: #8b7ffd; --accent-ink: #15141f; --accent-soft: #272445; --bad: #f08a8a; --bad-bg: #3a1f22; --ok: #6fd39a; --ok-bg: #18301f; color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.5; padding: 24px max(16px, env(safe-area-inset-left, 0px)) 48px; }
+      main { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+      [hidden] { display: none !important; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+      p { margin: 0; }
+      .sub, .note { color: var(--muted); }
+      .note { font-size: 13px; line-height: 1.45; }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; box-shadow: 0 1px 2px rgba(31,27,46,.04), 0 8px 24px rgba(31,27,46,.05); }
+      .topnav { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+      .back { display: inline-flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--accent); text-decoration: none; }
+      .switch { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+      .switch select { min-height: 40px; max-width: 100%; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
+      .drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 130px; border: 2px dashed var(--line); border-radius: 12px; padding: 18px; text-align: center; cursor: pointer; background: var(--card); }
+      .drop::before { content: "+"; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-size: 30px; line-height: 1; margin-bottom: 6px; }
+      .drop:hover, .drop:focus-within, .drop.over { border-color: var(--accent); background: var(--bg); }
+      .drop-title { font-weight: 600; }
+      .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; min-width: 0; }
+      .field input[type="text"], .field input[type="number"] { font: inherit; font-size: 16px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%; min-width: 0; }
+      .opt { display: flex; align-items: center; gap: 10px; font-weight: 600; min-height: 44px; }
+      .opt input { width: 20px; height: 20px; accent-color: var(--accent); }
+      .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .hint { font-size: 12.5px; font-weight: 400; color: var(--muted); }
+      .tip { font-size: 13px; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+      .file { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+      .file.dup { border-color: var(--bad); background: var(--bad-bg); }
+      .thumb { width: 48px; height: 48px; border-radius: 8px; background: var(--bg) center / cover no-repeat; border: 1px solid var(--line); display: grid; place-items: center; font-size: 11px; color: var(--muted); font-weight: 700; }
+      .meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+      .orig { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+      .namerow { display: flex; gap: 6px; align-items: center; min-width: 0; }
+      .namerow input { font: inherit; font-size: 16px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; min-height: 44px; min-width: 0; flex: 1 1 auto; }
+      .namerow .ext { width: 84px; flex: none; }
+      .willsave { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+      .willsave b { color: var(--ink); }
+      .file.dup .willsave { color: var(--bad); }
+      .actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; }
+      .btn { font: inherit; font-size: 14px; font-weight: 600; min-height: 44px; padding: 8px 14px; border-radius: 10px; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--accent); }
+      .btn:hover { border-color: var(--accent); }
+      .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); box-shadow: 0 6px 18px rgba(109,94,252,.25); }
+      .btn.quiet { color: var(--muted); }
+      .btn:disabled { opacity: .5; cursor: not-allowed; }
+      .list { display: flex; flex-direction: column; gap: 10px; }
+      .toolbar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+      .status { min-height: 1.5em; font-weight: 500; }
+      .error { color: var(--bad); font-weight: 600; font-size: 14px; }
+      @media (max-width: 480px) {
+        .row2 { grid-template-columns: 1fr; }
+        .file { grid-template-columns: 40px minmax(0, 1fr); }
+        .file .actions { grid-column: 1 / -1; flex-direction: row; }
+        .thumb { width: 40px; height: 40px; }
+        .namerow .ext { width: 70px; }
+      }
+    </style>
+  </head>
+
+<body>
+  <main>
+    <nav class="topnav" aria-label="Tools">
+      <a class="back" href="index.html">← All tools</a>
+      <label class="switch">Other tools
+        <select id="toolSwitch" aria-label="Switch tool">
+          <option value="">Switch tool…</option>
+          <option value="crop.html">Crop</option><option value="resize.html">Resize</option><option value="rotate.html">Rotate and flip</option><option value="blur.html">Blur or pixelate</option><option value="speed.html">Speed</option><option value="reverse.html">Reverse</option><option value="make-gif.html">Make a GIF</option><option value="split.html">Split into frames</option><option value="optimize.html">Optimize</option><option value="video-to-gif.html">Video to GIF</option><option value="text.html">Caption and border</option><option value="sticker.html">Discord sticker</option><option value="convert.html">Convert</option>
+        </select>
+      </label>
+    </nav>
+
+    <header>
+      <h1>Rename files</h1>
+      <p class="sub">Give any file a new name. Works with pictures, GIFs, videos, PDFs and anything else. The file itself stays the same.</p>
+    </header>
+
+    <section class="card">
+      <label class="drop" id="drop">
+        <input id="file" type="file" multiple hidden>
+        <span class="drop-title">Choose files</span>
+        <span class="note">or drop them here · any file type</span>
+      </label>
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+
+    <section class="card" id="batch" hidden>
+      <strong>Apply to all files (optional)</strong>
+      <div class="row2">
+        <label class="field">Add before each name
+          <input id="prefix" type="text" placeholder="e.g. summer-">
+        </label>
+        <label class="field">Add after each name
+          <input id="suffix" type="text" placeholder="e.g. -final">
+        </label>
+      </div>
+      <label class="opt"><input id="number" type="checkbox"> Number them (name-1, name-2, …)</label>
+      <p class="tip">Your files are never uploaded. Each file is saved to your device with the new name when you press Save.</p>
+    </section>
+
+    <section class="card" id="listCard" hidden>
+      <div class="toolbar">
+        <strong id="count"></strong>
+        <div class="row-btns" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn quiet" id="clearBtn">Clear all</button>
+          <button type="button" class="btn primary" id="saveAllBtn">Save all</button>
+        </div>
+      </div>
+      <div class="list" id="list"></div>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+      <p class="note">Your browser may ask you to allow several downloads when you press Save all.</p>
+    </section>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let items = [];
+    let uid = 0;
+
+    const split = name => {
+      const i = name.lastIndexOf(".");
+      return i > 0 ? { base: name.slice(0, i), ext: name.slice(i) } : { base: name, ext: "" };
+    };
+    const clean = s => s.replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
+    const cleanExt = s => {
+      const e = clean(s).replace(/^\.+/, "");
+      return e ? "." + e.replace(/\./g, "") : "";
+    };
+
+    function fileNames() {
+      const pre = clean($("prefix").value), suf = clean($("suffix").value);
+      const numbered = $("number").checked;
+      return items.map((it, i) => {
+        const base = clean(it.baseInput.value) || "file";
+        const n = numbered ? "-" + (i + 1) : "";
+        const ext = cleanExt(it.extInput.value);
+        return pre + base + n + suf + ext;
+      });
+    }
+
+    function refreshNames() {
+      const names = fileNames();
+      const seen = {};
+      names.forEach(n => { seen[n.toLowerCase()] = (seen[n.toLowerCase()] || 0) + 1; });
+      items.forEach((it, i) => {
+        const name = names[i];
+        const dup = seen[name.toLowerCase()] > 1;
+        it.el.classList.toggle("dup", dup);
+        it.will.innerHTML = "";
+        const label = document.createTextNode("Will save as ");
+        const b = document.createElement("b");
+        b.textContent = name;
+        it.will.append(label, b, document.createTextNode(dup ? "  (same name as another file)" : ""));
+      });
+      $("count").textContent = items.length + (items.length === 1 ? " file" : " files");
+    }
+
+    function saveOne(i) {
+      const it = items[i];
+      const name = fileNames()[i];
+      const url = URL.createObjectURL(it.file);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
+    }
+
+    async function saveAll() {
+      if (!items.length) return;
+      const names = fileNames();
+      if (new Set(names.map(n => n.toLowerCase())).size !== names.length) {
+        $("status").textContent = "Two or more files have the same name. Change one of them first.";
+        return;
+      }
+      $("saveAllBtn").disabled = true;
+      for (let i = 0; i < items.length; i++) {
+        $("status").textContent = `Saving ${i + 1} of ${items.length}…`;
+        saveOne(i);
+        await new Promise(r => setTimeout(r, 500));
+      }
+      $("status").textContent = "Done. Check your downloads folder.";
+      $("saveAllBtn").disabled = false;
+    }
+
+    function render() {
+      const list = $("list");
+      list.replaceChildren();
+      items.forEach((it, i) => {
+        const el = document.createElement("div");
+        el.className = "file";
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumb";
+        if (it.thumb) thumb.style.backgroundImage = `url("${it.thumb}")`;
+        else thumb.textContent = (split(it.file.name).ext.replace(".", "") || "file").slice(0, 4).toUpperCase();
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const orig = document.createElement("div");
+        orig.className = "orig";
+        orig.textContent = `Was: ${it.file.name} · ${(it.file.size / 1024).toFixed(0)} KB`;
+
+        const row = document.createElement("div");
+        row.className = "namerow";
+        const baseInput = document.createElement("input");
+        baseInput.type = "text";
+        baseInput.value = it.base;
+        baseInput.setAttribute("aria-label", "New name");
+        const extInput = document.createElement("input");
+        extInput.type = "text";
+        extInput.className = "ext";
+        extInput.value = it.ext;
+        extInput.setAttribute("aria-label", "File extension");
+        row.append(baseInput, extInput);
+
+        const will = document.createElement("div");
+        will.className = "willsave";
+
+        meta.append(orig, row, will);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const save = document.createElement("button");
+        save.type = "button";
+        save.className = "btn primary";
+        save.textContent = "Save";
+        save.addEventListener("click", () => saveOne(i));
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "btn quiet";
+        remove.textContent = "Remove";
+        remove.addEventListener("click", () => {
+          if (it.thumb) URL.revokeObjectURL(it.thumb);
+          items.splice(i, 1);
+          render();
+        });
+        actions.append(save, remove);
+
+        el.append(thumb, meta, actions);
+        list.append(el);
+
+        it.el = el;
+        it.baseInput = baseInput;
+        it.extInput = extInput;
+        it.will = will;
+        baseInput.addEventListener("input", refreshNames);
+        extInput.addEventListener("input", refreshNames);
+      });
+      $("listCard").hidden = items.length === 0;
+      $("batch").hidden = items.length === 0;
+      refreshNames();
+    }
+
+    function addFiles(list) {
+      $("error").hidden = true;
+      const files = [...list];
+      if (!files.length) return;
+      for (const file of files) {
+        const { base, ext } = split(file.name);
+        items.push({
+          file,
+          base,
+          ext,
+          thumb: file.type.startsWith("image/") ? URL.createObjectURL(file) : null,
+          id: ++uid,
+        });
+      }
+      $("status").textContent = "";
+      render();
+    }
+
+    $("file").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+    const drop = $("drop");
+    ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+    ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+    drop.addEventListener("drop", e => addFiles(e.dataTransfer.files));
+    ["prefix", "suffix"].forEach(id => $(id).addEventListener("input", refreshNames));
+    $("number").addEventListener("change", refreshNames);
+    $("saveAllBtn").addEventListener("click", saveAll);
+    $("clearBtn").addEventListener("click", () => {
+      items.forEach(it => { if (it.thumb) URL.revokeObjectURL(it.thumb); });
+      items = [];
+      render();
+    });
+
+    const here = location.pathname.split("/").pop();
+    const sw = $("toolSwitch");
+    [...sw.options].forEach(o => { o.selected = o.value === here; });
+    sw.addEventListener("change", () => { if (sw.value) location.href = sw.value; });
+  </script>
+</body>
+</html>
