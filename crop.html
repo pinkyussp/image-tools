@@ -333,15 +333,50 @@ input[type="radio"], input[type="checkbox"] { accent-color: var(--accent); width
       .rh-w { left: 0; top: 50%; transform: translate(0, -50%); cursor: ew-resize; }
       .pick-head { display: flex; flex-direction: column; gap: 4px; }
       .row-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+    
+      /* ---- navigation and steps ---- */
+      .topnav { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+      .switch { display: flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 14px; color: var(--muted); min-width: 0; }
+      .switch select {
+        min-height: 40px; max-width: 100%; font: inherit; font-size: 15px; font-weight: 600; color: var(--ink);
+        background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px;
+      }
+      .stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stepper li {
+        display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; font-size: 13px; font-weight: 600;
+        color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      }
+      .stepper li::before {
+        content: attr(data-n); flex: none; display: grid; place-items: center; width: 22px; height: 22px;
+        border-radius: 50%; font-size: 12px; background: var(--bg); color: var(--muted);
+      }
+      .stepper li.current { color: var(--ink); border-color: var(--accent); }
+      .stepper li.current::before { background: var(--accent); color: var(--accent-ink, #fff); }
+      .stepper li.done::before { content: "✓"; background: var(--ok-bg); color: var(--ok); }
+      @media (max-width: 380px) { .stepper li { font-size: 12px; padding: 8px 6px; gap: 6px; } }
     </style>
 </head>
 <body>
 <main>
-  <a class="back" href="index.html">← All tools</a>
+  <nav class="topnav" aria-label="Tools">
+        <a class="back" href="index.html">← All tools</a>
+        <label class="switch">Other tools
+          <select id="toolSwitch" aria-label="Switch tool">
+            <option value="">Switch tool…</option>
+            <option value="crop.html">Crop</option><option value="resize.html">Resize</option><option value="rotate.html">Rotate and flip</option><option value="blur.html">Blur or pixelate</option><option value="speed.html">Speed</option><option value="reverse.html">Reverse</option><option value="make-gif.html">Make a GIF</option><option value="split.html">Split into frames</option><option value="optimize.html">Optimize</option><option value="video-to-gif.html">Video to GIF</option><option value="text.html">Caption and border</option><option value="sticker.html">Discord sticker</option><option value="convert.html">Convert</option>
+          <option value="rename.html">Rename files</option>
+          </select>
+        </label>
+      </nav>
   <header>
     <h1>Crop</h1>
     <p class="sub">Cut out part of an image or GIF, free or in a set shape.</p>
   </header>
+      <ol class="stepper" id="stepper" aria-label="Steps">
+        <li data-n="1">Choose a file</li>
+        <li data-n="2">Adjust</li>
+        <li data-n="3">Save</li>
+      </ol>
 
   <section class="card">
     <label class="drop" id="drop">
@@ -1184,5 +1219,38 @@ Ez.register({
   });
 })();
 </script>
-</body>
+
+<script>
+(() => {
+  const steps = [...document.querySelectorAll("#stepper li")];
+  const info = document.getElementById("fileInfo");
+  const result = document.getElementById("result");
+  const saveRow = document.getElementById("saveRow");
+  const frames = document.getElementById("frames");
+  const sw = document.getElementById("toolSwitch");
+  const here = location.pathname.split("/").pop();
+  if (sw) {
+    [...sw.options].forEach(o => { o.selected = o.value === here; });
+    sw.addEventListener("change", () => { if (sw.value) location.href = sw.value; });
+  }
+  function update() {
+    const hasFile = !!(info && info.textContent.trim());
+    const done = (saveRow && !saveRow.hidden) || (frames && !frames.hidden && frames.children.length > 0);
+    const current = done ? 3 : hasFile ? 2 : 1;
+    steps.forEach((li, i) => {
+      const n = i + 1;
+      const isCur = n === current;
+      const isDone = n < current;
+      if (li.classList.contains("current") !== isCur) li.classList.toggle("current", isCur);
+      if (li.classList.contains("done") !== isDone) li.classList.toggle("done", isDone);
+      const aria = isCur ? "step" : "false";
+      if (li.getAttribute("aria-current") !== aria) li.setAttribute("aria-current", aria);
+    });
+  }
+  if (info) new MutationObserver(update).observe(info, { childList: true, characterData: true, subtree: true });
+  if (result) new MutationObserver(update).observe(result, { subtree: true, childList: true, attributes: true, attributeFilter: ["hidden", "src"] });
+  update();
+})();
+</script>
+  </body>
 </html>
