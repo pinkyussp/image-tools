@@ -26,6 +26,19 @@
 }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--bg); }
 .drop-title { font-weight: 600; }
+      .stepper { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+      .stepper li {
+        display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; font-size: 13px; font-weight: 600;
+        color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+      }
+      .stepper li::before {
+        content: attr(data-n); flex: none; display: grid; place-items: center; width: 22px; height: 22px;
+        border-radius: 50%; font-size: 12px; background: var(--bg); color: var(--muted);
+      }
+      .stepper li.current { color: var(--ink); border-color: var(--accent); }
+      .stepper li.current::before { background: var(--accent); color: var(--accent-ink, #fff); }
+      .stepper li.done::before { content: "✓"; background: var(--ok-bg); color: var(--ok); }
+      @media (max-width: 380px) { .stepper li { font-size: 12px; padding: 8px 6px; gap: 6px; } }
 * { box-sizing: border-box; }
       html { -webkit-text-size-adjust: 100%; }
       body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 15px; line-height: 1.5; padding: 24px max(16px, env(safe-area-inset-left, 0px)) 48px; }
@@ -117,6 +130,12 @@
       </label>
     </nav>
 
+    <ol class="stepper" id="stepper" aria-label="Steps">
+      <li data-n="1">Choose files</li>
+      <li data-n="2">Rename</li>
+      <li data-n="3">Save</li>
+    </ol>
+
     <header>
       <h1>Rename files</h1>
       <p class="sub">Give any file a new name. Works with pictures, GIFs, videos, PDFs and anything else. The file itself stays the same.</p>
@@ -204,6 +223,15 @@
       $("count").textContent = items.length + (items.length === 1 ? " file" : " files");
     }
 
+    let saved = false;
+    function updateSteps() {
+      const current = saved ? 3 : items.length ? 2 : 1;
+      document.querySelectorAll("#stepper li").forEach((li, i) => {
+        li.classList.toggle("current", i + 1 === current);
+        li.classList.toggle("done", i + 1 < current);
+      });
+    }
+
     function saveOne(i) {
       const it = items[i];
       const name = fileNames()[i];
@@ -214,6 +242,8 @@
       document.body.append(a);
       a.click();
       a.remove();
+      saved = true;
+      updateSteps();
       setTimeout(() => URL.revokeObjectURL(url), 20000);
     }
 
@@ -299,6 +329,7 @@
         extInput.addEventListener("input", refreshNames);
       });
       $("listCard").hidden = items.length === 0;
+      updateSteps();
       $("batch").hidden = items.length === 0;
       refreshNames();
     }
@@ -341,6 +372,7 @@
     const sw = $("toolSwitch");
     [...sw.options].forEach(o => { o.selected = o.value === here; });
     sw.addEventListener("change", () => { if (sw.value) location.href = sw.value; });
+    updateSteps();
   </script>
 </body>
 </html>
