@@ -124,10 +124,12 @@
 
     <section class="card">
       <label class="drop" id="drop">
-        <input id="file" type="file" multiple hidden>
+        <input id="file" type="file" accept="image/*,video/*" multiple hidden>
+        <input id="anyFile" type="file" multiple hidden>
         <span class="drop-title">Choose a file</span>
         <span class="note">or drop one here</span>
       </label>
+      <button type="button" class="btn quiet" id="otherBtn" style="align-self:center">Choose other files (PDF, Word, ZIP…)</button>
       <p class="error" id="error" role="alert" hidden></p>
     </section>
 
@@ -320,6 +322,8 @@
     }
 
     $("file").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+    $("anyFile").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
+    $("otherBtn").addEventListener("click", () => $("anyFile").click());
     const drop = $("drop");
     ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
     ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
