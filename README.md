@@ -22,19 +22,23 @@ no complicated software. no unnecessary uploads. just your images and the tools 
 
 ### ⌗ inside the toolbox
 
-| tool                | what it does                                               |
-| :------------------ | :--------------------------------------------------------- |
-| `crop`              | Cut out the exact part of an image or GIF you want.        |
-| `resize`            | Change dimensions, use presets, and set a file size limit. |
-| `speed`             | Make animated GIFs play faster or slower.                  |
-| `reverse`           | Reverse an animation or make it bounce back and forth.     |
-| `rotate & flip`     | Rotate images and mirror them in either direction.         |
-| `make a GIF`        | Turn multiple images into one animation.                   |
-| `split into frames` | Extract individual frames from a GIF.                      |
-| `optimize`          | Reduce GIF size by optimizing frames and colours.          |
-| `caption & border`  | Add text captions and coloured borders.                    |
-| `convert`           | Convert between GIF, PNG, JPEG, and WebP.                  |
-| `Discord sticker`   | Create 320 × 320 stickers under Discord's 512 KiB limit.   |
+| tool                | what it does                                                  |
+| :------------------ | :------------------------------------------------------------ |
+| `crop`              | Cut out the exact part of an image or GIF you want.           |
+| `resize`            | Change dimensions, use presets, and set a file size limit.    |
+| `blur & pixelate`   | Hide faces, names or numbers by blurring or pixelating areas. |
+| `enhance quality`   | Sharpen, clean up, and enlarge pictures and GIFs.             |
+| `speed`             | Make animated GIFs play faster or slower.                     |
+| `reverse`           | Reverse an animation or make it bounce back and forth.        |
+| `rotate & flip`     | Rotate images and mirror them in either direction.            |
+| `make a GIF`        | Turn multiple images into one animation.                      |
+| `split into frames` | Extract individual frames from a GIF.                         |
+| `optimize`          | Reduce GIF size by optimizing frames and colours.             |
+| `caption & border`  | Add text captions and coloured borders.                       |
+| `video to GIF`      | Turn a short MP4, WebM, or MOV into a GIF.                    |
+| `convert`           | Convert between GIF, PNG, JPEG, and WebP.                     |
+| `rename`            | Give any file a new name, or name a whole batch at once.      |
+| `Discord sticker`   | Create 320 × 320 stickers under Discord's 512 KiB limit.      |
 
 ### ୨୧ privacy first
 
